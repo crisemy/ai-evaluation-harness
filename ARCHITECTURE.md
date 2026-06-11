@@ -8,7 +8,20 @@ Stores evaluation datasets, golden answers, and benchmark data.
 
 ## Execution Layer
 
-Runs prompts, agents, workflows, or RAG pipelines against target systems.
+The Execution Layer is responsible for running evaluations against supported AI providers.
+
+Supported providers may include local and remote execution environments.
+
+Examples include:
+
+- Ollama
+- OpenAI
+- Anthropic
+- Gemini
+- OpenRouter
+- DeepSeek API
+
+Provider implementations should be abstracted behind a common interface.
 
 ## Evaluation Layer
 

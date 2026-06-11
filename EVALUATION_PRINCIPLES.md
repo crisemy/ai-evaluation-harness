@@ -27,3 +27,9 @@ Automated evaluations should complement, not completely replace, human judgment.
 ## Principle 7: Continuous Validation
 
 AI quality must be continuously monitored and not treated as a one-time verification activity.
+
+## Principle 8: Provider Independence, Provider-Agnostic Execution
+
+The framework should remain fully functional using local models whenever possible.
+
+Cloud providers may be supported as optional integrations, but they must not be mandatory for core evaluation workflows.
