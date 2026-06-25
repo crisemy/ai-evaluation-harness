@@ -26,20 +26,26 @@ These capabilities may be introduced in future phases.
 
 ## Future Directions
 
-Potential future phases include:
-
 ### Phase 2
 
-Multi-Model Comparison
+RAG Evaluation (DeepEval)
+
+Leverage DeepEval to evaluate retrieval-augmented generation pipelines, including faithfulness, answer relevancy, context precision, context recall, and hallucination detection.
 
 ### Phase 3
 
-RAG Evaluation
+Multi-Model Comparison
+
+Compare multiple models on the same evaluation datasets with parallel execution, cost tracking, and side-by-side reporting.
 
 ### Phase 4
 
 Agent Evaluation
 
+Evaluate multi-step AI agent behaviors, tool-use quality, and trajectory correctness.
+
 ### Phase 5
 
 Observability and Monitoring
+
+Continuous monitoring, alerting, and dashboarding for evaluation results over time.
