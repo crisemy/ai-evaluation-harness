@@ -10,3 +10,7 @@ build/
 .DS_Store
 *.log
 data/raw/
+
+# Datasets — regenerated via scripts/prepare_kaggle_dataset.py
+datasets/
+!datasets/.gitkeep
