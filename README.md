@@ -71,6 +71,41 @@ The project is currently focused on establishing its vision, architecture, evalu
 
 This project follows the methodology defined in the [AI QA Core Framework](ai-qa-core-framework/) (`ai-qa-core-framework/`). The CORE framework provides the governing methodology, contracts, and skills; this project is the concrete implementation of an AI evaluation tool within that framework.
 
+## Setup
+
+### Prerequisites
+
+- Python 3.12+
+- PowerShell 7+ (Windows)
+
+### Virtual Environment
+
+```powershell
+# Create virtual environment
+python -m venv .venv
+
+# Activate it
+.\.venv\Scripts\Activate.ps1
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+> The `.venv` directory is git-ignored. Activate it before running any harness commands.
+
+### Deactivate
+
+```powershell
+deactivate
+```
+
+## Python Conventions
+
+- **Source code** goes under `src/harness/`
+- **Dataset preparation scripts** go under `scripts/`
+- **Tests** go under `tests/`
+- Use `requirements.txt` for pinned dependencies (add as you go)
+
 ## License
 
 TBD

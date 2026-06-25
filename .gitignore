@@ -1,1 +1,12 @@
-ai-qa-core-framework/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+*.egg-info/
+dist/
+build/
+.DS_Store
+*.log
+data/raw/
