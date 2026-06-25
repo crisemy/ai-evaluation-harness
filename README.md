@@ -28,9 +28,9 @@ AI Evaluation Harness aims to provide:
 
 ## Current Status
 
-Project Stage: Definition & Architecture
+Project Stage: MVP — Phase 1 (Contracts & Interfaces) Complete
 
-The project is currently focused on establishing its vision, architecture, evaluation principles, and development standards before implementation begins.
+The data contracts and abstract interfaces have been implemented. The project is now ready for concrete component implementation (Dataset Loader, LLM Executor, Evaluation Engine, Reporter).
 
 ## Target Audience
 
@@ -99,12 +99,40 @@ pip install -r requirements.txt
 deactivate
 ```
 
+## Package Structure
+
+```
+src/harness/
+├── __init__.py
+├── contracts/         # Data contracts (dataclasses)
+│   ├── dataset.py     # Dataset, DatasetEntry, DatasetMetadata
+│   ├── execution.py   # ExecutionRequest, ExecutionResponse, TokenUsage
+│   ├── evaluation.py  # MetricResult, EvaluationResult
+│   ├── report.py      # EvaluationSummary, Report, SummaryStats
+│   └── trace.py       # ObservableEvent, Trace
+└── interfaces/        # Abstract base classes
+    ├── dataset_loader.py  # DatasetLoader (ABC)
+    ├── provider.py        # LLMProvider (ABC)
+    ├── metric.py          # Metric (ABC)
+    ├── reporter.py        # Reporter (ABC)
+    └── observer.py        # Observer (ABC)
+```
+
 ## Python Conventions
 
 - **Source code** goes under `src/harness/`
+- **Contracts** (dataclasses) go under `src/harness/contracts/`
+- **Interfaces** (abstract classes) go under `src/harness/interfaces/`
 - **Dataset preparation scripts** go under `scripts/`
 - **Tests** go under `tests/`
 - Use `requirements.txt` for pinned dependencies (add as you go)
+
+## Running Tests
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+pytest tests/ -v
+```
 
 ## License
 

@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any
+
+from harness.contracts.evaluation import EvaluationResult
+
+
+@dataclass
+class EnvironmentInfo:
+    harness_version: str
+    python_version: str
+    platform: str
+    provider_versions: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class MetricSummary:
+    mean: float
+    min: float
+    max: float
+    pass_rate: float
+
+
+@dataclass
+class EvaluationConfig:
+    dataset_path: str
+    dataset_format: str
+    provider: str
+    model: str
+    metrics: list[str]
+
+
+@dataclass
+class SummaryStats:
+    total_entries: int
+    passed: int
+    failed: int
+    skipped: int
+    pass_rate: float
+    average_score: float
+    metrics: dict[str, MetricSummary]
+
+
+@dataclass
+class EvaluationSummary:
+    evaluation_name: str
+    evaluation_id: str
+    timestamp: datetime
+    duration_ms: int
+    config: EvaluationConfig
+    environment: EnvironmentInfo
+    summary: SummaryStats
+    results: list[EvaluationResult]
+
+
+@dataclass
+class ReportMetadata:
+    format: str
+    generated_at: datetime
+
+
+@dataclass
+class Report:
+    format: str
+    content: str
+    metadata: ReportMetadata
