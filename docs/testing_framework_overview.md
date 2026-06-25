@@ -9,7 +9,7 @@ This document describes the testing methodology applied to the AI Evaluation Har
 The testing strategy follows the CORE framework phases, adapted for evaluation harness validation:
 
 | Phase | CORE Phase | Focus | Scope |
-|-------|------------|-------|-------|
+| ------- | ------------ | ------- | ------- |
 | T0 — Inception | Phase 0 | Test strategy definition | Plans, contracts, risk assessment |
 | T1 — Contract & Component | Phase 1 | Unit & integration tests | Data contracts, provider interface, metrics |
 | T2 — Pipeline | Phase 2 | End-to-end evaluation flow | Dataset → Executor → Metrics → Report |
@@ -27,7 +27,7 @@ Define the testing strategy, identify risks, and establish quality contracts bef
 ### Artifacts
 
 | Artifact | CORE Template | Purpose |
-|----------|---------------|---------|
+| ---------- | --------------- | --------- |
 | Risk Model Card | `templates/risk_model_card.md` | Identify testing risks (provider reliability, metric correctness) |
 | Test Strategy | This document | Define scope, approach, resources |
 | Quality KPIs | `kpi_governance.md` | Define pass thresholds, coverage targets |
@@ -35,7 +35,7 @@ Define the testing strategy, identify risks, and establish quality contracts bef
 ### Key Risks
 
 | Risk | Mitigation |
-|------|------------|
+| ------ | ------------ |
 | Provider API changes | Provider interface abstraction, contract tests |
 | Metric score inconsistency | Golden datasets with known expected scores |
 | Flaky evaluation results | Statistical aggregation over multiple runs |
@@ -45,7 +45,7 @@ Define the testing strategy, identify risks, and establish quality contracts bef
 
 ## 3. T1 — Contract & Component Tests
 
-### Goal
+### T1 Goal
 
 Validate individual components in isolation with mocked dependencies.
 
@@ -55,7 +55,7 @@ Validate individual components in isolation with mocked dependencies.
 
 Validate dataset loading, validation, and serialization.
 
-```
+```bash
 Dataset Loader Tests:
   ✓ Load valid JSON dataset → returns Dataset with correct entries
   ✓ Load valid CSV dataset → returns Dataset with correct entries
@@ -69,7 +69,7 @@ Dataset Loader Tests:
 
 Validate provider abstraction with mock providers.
 
-```
+```bash
 Provider Interface Tests:
   ✓ Mock provider returns expected response → ExecutionResponse with correct text
   ✓ Provider timeout → TimeoutError with configurable threshold
@@ -82,7 +82,7 @@ Provider Interface Tests:
 
 Validate metric correctness with known inputs.
 
-```
+```bash
 Metric Tests:
   ✓ ExactMatch — identical strings → score 1.0
   ✓ ExactMatch — different strings → score 0.0
@@ -100,7 +100,7 @@ Metric Tests:
 
 Validate output format correctness.
 
-```
+```bash
 Reporter Tests:
   ✓ Generate JSON report → valid JSON with expected structure
   ✓ Generate Markdown report → valid Markdown with summary table
@@ -112,14 +112,14 @@ Reporter Tests:
 
 ## 4. T2 — Pipeline Tests
 
-### Goal
+### T2 Goal
 
 Validate the end-to-end evaluation flow with real (or realistic) components.
 
 ### Test Scenarios
 
 | Scenario | Description | Validation |
-|----------|-------------|------------|
+| ---------- | ------------- | ------------ |
 | Happy path | Load dataset → execute → evaluate → report | All steps complete, report generated |
 | Partial failure | One provider call fails mid-batch | Remaining entries evaluated, error logged |
 | Empty dataset | Load empty valid dataset | Zero evaluations, empty report |
@@ -143,7 +143,7 @@ assert all(r.metrics[0].score in [0.0, 1.0] for r in results)
 
 ## 5. T3 — Regression Tests
 
-### Goal
+### T3 Goal
 
 Detect regressions in evaluation results across code changes.
 
@@ -157,7 +157,7 @@ Detect regressions in evaluation results across code changes.
 ### Regression Detection
 
 | Change Type | Expected Impact | Detection Method |
-|-------------|-----------------|------------------|
+| ------------- | ----------------- | ------------------ |
 | Metric implementation change | Score change | Baseline comparison |
 | Provider response change | Latency, content | Timing + content diff |
 | Dataset format change | Entry count, structure | Schema validation |
@@ -167,11 +167,11 @@ Detect regressions in evaluation results across code changes.
 
 ## 6. T4 — Operations Tests
 
-### Goal
+### T4 Goal
 
 Validate observability, monitoring, and operational behavior.
 
-### Test Types
+### T4 Test Types
 
 - **Trace emission**: Every component emits correct events
 - **Trace completeness**: End-to-end trace contains all expected stages
@@ -197,7 +197,7 @@ These principles extend the CORE framework's evaluation guidelines for harness t
 ## 8. CORE Framework References
 
 | CORE Resource | Usage in Testing |
-|---------------|------------------|
+| --------------- | ------------------ |
 | `01_fundamentals/data_contracts.md` | Dataset schema validation tests |
 | `01_fundamentals/kpi_governance.md` | Metric threshold and KPI definitions |
 | `01_fundamentals/risk_prioritization_contracts.md` | Testing risk classification |

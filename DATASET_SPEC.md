@@ -19,7 +19,7 @@ Datasets are stored as JSON or YAML files with the following top-level structure
 ## 2. Dataset Entry
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ------- | ------ | ---------- | ------------- |
 | `id` | string | Yes | Unique identifier within dataset |
 | `input` | string | Yes | Prompt or query to evaluate |
 | `expected_output` | string | Yes | Reference/golden answer |
@@ -69,7 +69,7 @@ Datasets are stored as JSON or YAML files with the following top-level structure
 ## 5. Supported Formats
 
 | Format | Extension | Status |
-|--------|-----------|--------|
+| -------- | ----------- | -------- |
 | JSON | `.json` | MVP |
 | CSV | `.csv` | MVP |
 | YAML | `.yaml`, `.yml` | MVP |
