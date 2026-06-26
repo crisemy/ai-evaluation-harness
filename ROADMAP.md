@@ -18,14 +18,14 @@ Goal: Establish the core evaluation pipeline for LLM prompt-response evaluation.
 
 ### Milestones
 
-| # | Milestone | Description |
-|---|-----------|-------------|
-| M1 | Dataset Loader | Load evaluation datasets from files (JSON, CSV, YAML) | ✅ Complete |
-| M2 | Provider Interface | Abstract provider contract with first implementation (Ollama) |
-| M3 | Prompt Executor | Execute prompts against providers, collect responses |
-| M4 | Evaluation Engine | Apply metrics to collected responses |
-| M5 | Report Generator | Generate structured evaluation reports |
-| M6 | CLI Entry Point | Expose all functionality via CLI |
+| # | Milestone | Description | Status |
+|---|-----------|-------------|--------|
+| M1 | Dataset Loader | Load evaluation datasets from files (JSON) | ✅ Complete |
+| M2 | Provider Interface | Abstract provider contract with Ollama implementation | ✅ Complete |
+| M3 | Prompt Executor | Execute prompts against providers, collect responses | ✅ Complete |
+| M4 | Evaluation Engine | Apply metrics (exact_match, contains) to collected responses | ✅ Complete |
+| M5 | Report Generator | Generate structured JSON evaluation reports | ✅ Complete |
+| M6 | CLI Entry Point | `harness eval` command wiring the full pipeline | ✅ Complete |
 
 ### Dependencies
 

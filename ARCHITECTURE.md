@@ -64,4 +64,41 @@ src/harness/
 
 ## Integration Layer
 
-Provides integration with CI/CD platforms and external systems.
+Provides integration with CI/CD platforms and external systems via the CLI (`harness eval`).
+
+## Current Package Structure
+
+```
+src/harness/
+├── __init__.py
+├── __main__.py              # python -m harness support
+├── cli.py                   # CLI entry point (argparse)
+├── errors.py                # Shared error types
+├── evaluator.py             # EvaluationEngine, EvalSample, EvaluationConfigInput
+├── executor.py              # PromptExecutor, ExecutorConfig
+├── contracts/               # Data contracts (dataclasses)
+│   ├── dataset.py
+│   ├── execution.py
+│   ├── evaluation.py
+│   ├── report.py
+│   └── trace.py
+├── interfaces/              # Abstract base classes
+│   ├── dataset_loader.py
+│   ├── provider.py
+│   ├── metric.py
+│   ├── reporter.py
+│   └── observer.py
+├── loaders/                 # Concrete dataset loaders
+│   ├── __init__.py
+│   └── json_loader.py       # JSONDatasetLoader
+├── metrics/                 # Concrete metric implementations
+│   ├── __init__.py
+│   ├── exact_match.py       # ExactMatch — string equality
+│   └── contains.py          # Contains — substring search
+├── providers/               # Concrete LLM provider implementations
+│   ├── __init__.py
+│   └── ollama.py            # OllamaProvider — HTTP client for local Ollama
+└── reporters/               # Concrete report generators
+    ├── __init__.py
+    └── json_reporter.py     # JSONReporter — writes EvaluationSummary to JSON
+```

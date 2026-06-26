@@ -28,12 +28,19 @@ AI Evaluation Harness aims to provide:
 
 ## Current Status
 
-Project Stage: MVP — Milestone 1 (Dataset Loader) Complete
+Project Stage: **MVP Complete** — All 6 milestones done
 
-- **Phase 1** (Contracts & Interfaces) — Complete. Data contracts and ABCs defined.
-- **M1** (Dataset Loader) — Complete. `JSONDatasetLoader` validates and loads datasets.
-- **Dataset** — Kaggle QA dataset with 1,456 entries transformed into the project's JSON schema.
-- **Next:** M2 — Provider Interface with Ollama implementation.
+| # | Milestone | Status |
+|---|-----------|--------|
+| — | Contracts & Interfaces | ✅ Complete |
+| M1 | Dataset Loader | ✅ Complete |
+| M2 | Provider Interface (Ollama) | ✅ Complete |
+| M3 | Prompt Executor | ✅ Complete |
+| M4 | Evaluation Engine | ✅ Complete |
+| M5 | Report Generator | ✅ Complete |
+| M6 | CLI Entry Point | ✅ Complete |
+
+The full evaluation pipeline works end-to-end: **load dataset → execute prompts → evaluate metrics → generate report**.
 
 ## Target Audience
 

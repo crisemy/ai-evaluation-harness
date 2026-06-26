@@ -7,7 +7,7 @@ from harness.contracts.dataset import Dataset
 
 class DatasetLoader(ABC):
     @abstractmethod
-    def load(self, path: str, format: str) -> Dataset:
+    def load(self, path: str, format: str = "json") -> Dataset:
         pass
 
     @abstractmethod

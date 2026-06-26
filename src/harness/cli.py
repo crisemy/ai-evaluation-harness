@@ -1,0 +1,138 @@
+from __future__ import annotations
+
+import argparse
+import logging
+import sys
+from pathlib import Path
+
+from harness.errors import HarnessError
+from harness.evaluator import EvalSample, EvaluationConfigInput, EvaluationEngine
+from harness.executor import ExecutorConfig, PromptExecutor
+from harness.loaders import JSONDatasetLoader
+from harness.metrics import Contains, ExactMatch
+from harness.providers import OllamaProvider
+from harness.reporters import JSONReporter
+
+logger = logging.getLogger(__name__)
+
+METRIC_REGISTRY = {
+    "exact_match": ExactMatch,
+    "contains": Contains,
+}
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="harness",
+        description="AI Evaluation Harness — evaluate LLM prompt responses",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    eval_ = sub.add_parser("eval", help="Run an evaluation")
+    eval_.add_argument("--dataset", "-d", required=True, help="Path to dataset file")
+    eval_.add_argument("--provider", "-p", default="ollama", help="Provider name")
+    eval_.add_argument("--model", "-m", default="phi3", help="Model name")
+    eval_.add_argument(
+        "--metrics", nargs="+", default=["exact_match", "contains"], help="Metrics to apply"
+    )
+    eval_.add_argument("--output", "-o", default="report.json", help="Output report path")
+    eval_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
+    eval_.add_argument("--max-tokens", type=int, default=256, help="Max tokens per response")
+    eval_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
+    eval_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(levelname)s | %(message)s",
+    )
+
+    if args.command == "eval":
+        return _run_eval(args)
+
+    return 0
+
+
+def _run_eval(args: argparse.Namespace) -> int:
+    dataset_path = Path(args.dataset)
+    if not dataset_path.exists():
+        logger.error("Dataset not found: %s", dataset_path)
+        return 1
+
+    metrics = []
+    for name in args.metrics:
+        cls = METRIC_REGISTRY.get(name)
+        if cls is None:
+            logger.error("Unknown metric: %s. Available: %s", name, list(METRIC_REGISTRY))
+            return 1
+        metrics.append(cls())
+
+    try:
+        loader = JSONDatasetLoader()
+        provider = OllamaProvider()
+        executor_config = ExecutorConfig(
+            provider=args.provider,
+            model=args.model,
+            temperature=args.temperature,
+            max_tokens=args.max_tokens,
+        )
+        executor = PromptExecutor(loader, provider, executor_config)
+
+        dataset = loader.load(str(dataset_path))
+        entries = dataset.entries
+        if args.limit > 0:
+            entries = entries[: args.limit]
+
+        logger.info("Loaded %d entries from %s", len(entries), dataset_path)
+
+        responses = []
+        for entry in entries:
+            logger.info("Executing entry %s...", entry.id)
+            resp = executor.execute_entry(entry)
+            responses.append(EvalSample(response=resp, expected_output=entry.expected_output))
+            logger.info(
+                "  → %d tokens in %dms",
+                resp.token_usage.total_tokens,
+                resp.latency_ms,
+            )
+
+        eval_config = EvaluationConfigInput(
+            dataset_path=str(dataset_path),
+            dataset_format="json",
+            provider=args.provider,
+            model=args.model,
+            metrics=args.metrics,
+        )
+        engine = EvaluationEngine(metrics, eval_config)
+        summary = engine.evaluate(responses)
+
+        reporter = JSONReporter()
+        report = reporter.generate(summary)
+        out_path = reporter.write(report, args.output)
+
+        logger.info("")
+        logger.info("Evaluation complete:")
+        logger.info("  Entries: %d", summary.summary.total_entries)
+        logger.info("  Passed:  %d", summary.summary.passed)
+        logger.info("  Failed:  %d", summary.summary.failed)
+        logger.info("  Rate:    %.1f%%", summary.summary.pass_rate * 100)
+        logger.info("  Report:  %s", out_path)
+
+        return 0
+
+    except HarnessError as e:
+        logger.error("Harness error: %s", e)
+        return 1
+    except Exception as e:
+        logger.exception("Unexpected error: %s", e)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
