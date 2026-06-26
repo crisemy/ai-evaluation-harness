@@ -1,57 +1,44 @@
 # AGENTS
 
-This repository is designed to be AI-agent friendly.
-
-All agents contributing to this repository must follow the rules below.
+Instructions for AI agents working on this repository.
 
 ## Session Start
 
-At the beginning of every session, the project context is automatically pre-loaded via `opencode.json` instructions (if opencode is used). The files loaded in order are:
+Read these files in order at session start for project context:
 
-1. **CONTEXT.md** — Project overview, purpose, scope, and terminology.
-2. **ARCHITECTURE.md** — System design, module relationships, and data flow.
-3. **README.md** — User-facing documentation, setup, and usage instructions.
+1. **CONTEXT.md** — problem domain, scope, terminology
+2. **ARCHITECTURE.md** — module relationships, data flow
+3. **README.md** — setup, usage, current status
 
-For non-opencode agents, read these files manually at session start.
+## Key Commands
 
-## Core Principles
+```powershell
+.venv\Scripts\Activate.ps1      # activate venv
+pytest tests/ -v                 # run all 147 tests
+harness eval -d datasets/qa_kaggle.json -m phi3 --limit 5   # quick eval
+harness monitor status           # check latest metrics
+harness monitor dashboard -o dashboard.html   # generate dashboard
+```
 
-* Documentation is part of the product.
-* Architecture consistency is more important than implementation speed.
-* Evaluation quality is more important than feature quantity.
-* Simplicity is preferred over premature optimization.
+## Project Layout
 
-## Required Documentation Updates
+- **`src/harness/`** — single package (no monorepo)
+- **`harness.cli:main`** — entrypoint (registered in `pyproject.toml` scripts; also `python -m harness`)
+- **Agents** use `create_autospec` from `unittest.mock` for isolated testing
+- `.harness/`, `dashboard.html`, `report.json`, `*.ndjson` are gitignored run artifacts
 
-Whenever a significant change is introduced:
+## Documentation Rules
 
-* Update README.md if user-facing behavior changes.
-* Update CONTEXT.md if project scope changes.
-* Update ARCHITECTURE.md if architectural decisions change.
-* Update ROADMAP.md if project priorities change.
-* Register a decision in DECISIONS.md when appropriate.
+After any significant change, update:
+- **README.md** — if user-facing behavior changes
+- **ARCHITECTURE.md** — if module relationships change
+- **ROADMAP.md** — if project priorities change
+- **DECISIONS.md** — ADR when an architectural decision is made
 
-When finishing a **Phase** or **Milestone** (as defined in ROADMAP.md), ALL of the above documents must be reviewed and updated before moving to the next phase/milestone.
+When finishing a **Phase** or **Milestone** (per ROADMAP.md), review ALL of the above.
 
-## Coding Guidelines
+## Constraints
 
-* Prioritize readability.
-* Favor maintainability over cleverness.
-* Avoid introducing unnecessary dependencies.
-* Keep vendor-specific implementations isolated.
-
-## Evaluation Guidelines
-
-* Evaluations must be repeatable.
-* Metrics must be observable.
-* Results must be explainable.
-* Human review should remain possible.
-
-## Pull Request Expectations
-
-Every contribution should include:
-
-* Purpose of the change.
-* Impacted architectural components.
-* Documentation updates.
-* Risks and limitations.
+- No new dependencies without strong reason (see `requirements.txt`)
+- Keep vendor-specific code isolated behind interfaces (`interfaces/`)
+- All evaluations must be repeatable (deterministic or seeded)
