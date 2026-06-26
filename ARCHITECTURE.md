@@ -7,6 +7,7 @@ The AI Evaluation Harness is organized around several logical layers.
 Stores evaluation datasets, golden answers, and benchmark data.
 
 Includes the `DatasetLoader` interface and concrete implementations:
+
 - **`JSONDatasetLoader`** — Loads datasets from the project's JSON schema (`format_version 1.0`). Validates required fields, format version, and entry structure at load time.
 - Error types: `ValidationError`, `FormatError`, `LoadError` (defined in `src/harness/errors.py`).
 
@@ -40,6 +41,7 @@ Generates evaluation reports and quality dashboards.
 Collects execution traces, metrics, logs, and diagnostic information.
 
 Components:
+
 - **`TraceObserver`** — Concrete Observer implementation that captures `ObservableEvent`s in memory, groups them by trace, and persists to NdJSON files. Integral with the existing `Observer` interface.
 - **`TimeSeriesStore`** — Append-only NdJSON store that records `MetricSnapshot` entries with timestamps, evaluation IDs, and configuration context for trend analysis.
 - **`AlertEngine`** — Evaluates threshold-based `AlertRule` definitions (operators: gt/lt/gte/lte/eq) against historical snapshots, producing `AlertResult` objects for triggered rules.
@@ -47,7 +49,7 @@ Components:
 
 ## Package Structure
 
-```
+```bash
 src/harness/
 ├── __init__.py
 ├── errors.py             # Shared error types: HarnessError, ValidationError, FormatError, LoadError, MetricError
@@ -74,7 +76,7 @@ Provides integration with CI/CD platforms and external systems via the CLI (`har
 
 ## Current Package Structure
 
-```
+```bash
 src/harness/
 ├── __init__.py
 ├── __main__.py              # python -m harness support
