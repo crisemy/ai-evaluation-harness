@@ -33,7 +33,7 @@ Project Stage: **Phase 5 Complete** — Observability & Monitoring
 ### MVP (Prompt Evaluation)
 
 | # | Milestone | Status |
-|---|-----------|--------|
+| --- | ----------- | -------- |
 | — | Contracts & Interfaces | ✅ Complete |
 | M1 | Dataset Loader | ✅ Complete |
 | M2 | Provider Interface (Ollama) | ✅ Complete |
@@ -45,7 +45,7 @@ Project Stage: **Phase 5 Complete** — Observability & Monitoring
 ### Phase 2 — RAG Evaluation
 
 | # | Milestone | Status |
-|---|-----------|--------|
+| --- | ----------- | -------- |
 | R1 | DeepEval Integration | ✅ Complete |
 | R2 | Context Provider | ✅ Complete |
 | R3 | RAG Metrics (Faithfulness, Relevancy, Precision, Recall) | ✅ Complete |
@@ -55,7 +55,7 @@ Project Stage: **Phase 5 Complete** — Observability & Monitoring
 ### Phase 3 — Multi-Model Comparison
 
 | # | Milestone | Status |
-|---|-----------|--------|
+| --- | ----------- | -------- |
 | C1 | Model Registry (`ModelSpec`) | ✅ Complete |
 | C2 | Parallel Execution (`ThreadPoolExecutor`) | ✅ Complete |
 | C3 | Comparison Report (side-by-side metrics, tokens, latency) | ✅ Complete |
@@ -64,7 +64,7 @@ Project Stage: **Phase 5 Complete** — Observability & Monitoring
 ### Phase 4 — Agent Evaluation
 
 | # | Milestone | Status |
-|---|-----------|--------|
+| --- | ----------- | -------- |
 | A1 | Trajectory Capture (`AgentStep`, `AgentTrajectory`) | ✅ Complete |
 | A2 | Step-Level Metrics (`StepCorrectness`) | ✅ Complete |
 | A3 | Outcome Metrics (`GoalAchievement`) | ✅ Complete |
@@ -73,7 +73,7 @@ Project Stage: **Phase 5 Complete** — Observability & Monitoring
 ### Phase 5 — Observability & Monitoring
 
 | # | Milestone | Status |
-|---|-----------|--------|
+| --- | ----------- | -------- |
 | O1 | Execution Tracing (`TraceObserver`) — captures evaluation events with timing, persists to NdJSON | ✅ Complete |
 | O2 | Metric Time Series (`TimeSeriesStore`) — appends metric results with timestamps for trend analysis | ✅ Complete |
 | O3 | Alert Rules (`AlertEngine`) — threshold-based alerting (gt/lt/gte/lte/eq) with default rules | ✅ Complete |
@@ -107,7 +107,7 @@ The full evaluation pipeline works end-to-end: **load dataset → execute prompt
 ## Documentation
 
 | Document | Description |
-|----------|-------------|
+| ---------- | ------------- |
 | `VISION.md` | Project vision and long-term goals |
 | `CONTEXT.md` | Problem context and motivation |
 | `ARCHITECTURE.md` | High-level architecture overview |
@@ -157,7 +157,7 @@ deactivate
 
 ## Package Structure
 
-```
+```bash
 src/harness/
 ├── __init__.py
 ├── errors.py             # Shared error types
