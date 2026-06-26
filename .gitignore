@@ -17,6 +17,9 @@ dashboard.html
 report.json
 *.ndjson
 
+# Personal content
+speach.md
+
 # Datasets — regenerated via scripts/prepare_kaggle_dataset.py
 datasets/
 !datasets/.gitkeep
