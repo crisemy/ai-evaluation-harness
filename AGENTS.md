@@ -30,6 +30,7 @@ harness monitor dashboard -o dashboard.html   # generate dashboard
 ## Documentation Rules
 
 After any significant change, update:
+
 - **README.md** — if user-facing behavior changes
 - **ARCHITECTURE.md** — if module relationships change
 - **ROADMAP.md** — if project priorities change
