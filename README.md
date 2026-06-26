@@ -10,6 +10,85 @@ The project aims to provide a structured and repeatable approach to AI Quality E
 * AI Assistants
 * Prompt-based applications
 
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph CLI["CLI Layer (argparse)"]
+        EVAL["harness eval"]
+        RAG["harness rag-eval"]
+        AGENT["harness agent-eval"]
+        CMP["harness compare"]
+        MON["harness monitor"]
+    end
+
+    subgraph DATASET["Dataset Layer"]
+        KAGGLE["Kaggle Dataset<br/>1,456 QA entries"]
+        LOADER["JSONDatasetLoader<br/>format_version 1.0"]
+    end
+
+    subgraph EXECUTION["Execution Layer"]
+        OLLAMA["OllamaProvider<br/>phi3 · llama3.2 · qwen2.5"]
+        EXEC["PromptExecutor"]
+    end
+
+    subgraph EVAL["Evaluation Layer"]
+        M1["ExactMatch · Contains"]
+        M2["Faithfulness · AnswerRelevancy<br/>ContextPrecision · ContextRecall"]
+        M3["StepCorrectness · GoalAchievement<br/>ToolSelection · TrajectoryCoherence"]
+        ENGINE["EvaluationEngine"]
+        RAG_EVAL["RAGEvaluator"]
+        AGENT_EVAL["AgentEvaluator"]
+        COMPARE["ComparisonEngine"]
+    end
+
+    subgraph OBSERV["Observability Layer"]
+        TRACE["TraceObserver<br/>NdJSON traces"]
+        TS["TimeSeriesStore<br/>NdJSON metric history"]
+        ALERT["AlertEngine<br/>threshold rules"]
+        DASH["DashboardGenerator<br/>static HTML"]
+    end
+
+    subgraph REPORT["Reporting Layer"]
+        JSON_RPT["JSONReporter"]
+    end
+
+    CLI --> DATASET
+    CLI --> EXECUTION
+    CLI --> EVAL
+    CLI --> OBSERV
+    CLI --> REPORT
+
+    DATASET --> LOADER
+    LOADER --> KAGGLE
+
+    EXECUTION --> OLLAMA
+    EXECUTION --> EXEC
+
+    EVAL --> ENGINE
+    EVAL --> RAG_EVAL
+    EVAL --> AGENT_EVAL
+    EVAL --> COMPARE
+    ENGINE --> M1
+    RAG_EVAL --> M2
+    AGENT_EVAL --> M3
+
+    ENGINE --> REPORT
+    RAG_EVAL --> REPORT
+    AGENT_EVAL --> REPORT
+    COMPARE --> REPORT
+
+    ENGINE --> OBSERV
+    RAG_EVAL --> OBSERV
+    AGENT_EVAL --> OBSERV
+    OBSERV --> TRACE
+    OBSERV --> TS
+    OBSERV --> ALERT
+    OBSERV --> DASH
+
+    REPORT --> JSON_RPT
+```
+
 ## Why This Project Exists
 
 Traditional software testing relies on deterministic outputs and exact assertions.
