@@ -122,7 +122,7 @@ The full evaluation pipeline works end-to-end: **load dataset → execute prompt
 ### Upcoming Phases
 
 | Phase | Focus | Status |
-|-------|-------|--------|
+| ------- | ------- | -------- |
 | Phase 6 | CI/CD Integration — GitHub Actions workflows, PR comments, artifact publishing | Planned |
 | Phase 7 | Extended Provider Support — Groq, OpenRouter, OpenAI, cost tracking | Planned |
 
@@ -169,8 +169,8 @@ This project follows the methodology defined in the AI QA Core Framework. The CO
 
 ### Prerequisites
 
-- Python 3.12+
-- PowerShell 7+ (Windows)
+a. Install Python 3.12+
+b. PowerShell 7+ (Windows)
 
 ### Virtual Environment
 
@@ -227,12 +227,13 @@ src/harness/
 
 ## Python Conventions
 
-- **Source code** goes under `src/harness/`
-- **Contracts** (dataclasses) go under `src/harness/contracts/`
-- **Interfaces** (abstract classes) go under `src/harness/interfaces/`
-- **Dataset preparation scripts** go under `scripts/`
-- **Tests** go under `tests/`
-- Use `requirements.txt` for pinned dependencies (add as you go)
+a. **Source code** goes under `src/harness/`
+b. **Tests** go under `tests/`
+c. **Contracts** (dataclasses) go under `src/harness/contracts/`
+d. **Interfaces** (abstract classes) go under `src/harness/interfaces/`
+e. **Dataset preparation scripts** go under `scripts/`
+f. **Tests** go under `tests/`
+g. Use `requirements.txt` for pinned dependencies (add as you go)
 
 ## CLI Usage
 
