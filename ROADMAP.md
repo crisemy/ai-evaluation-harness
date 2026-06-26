@@ -6,7 +6,7 @@
 |-------|-------|----------------------|--------|
 | MVP | Prompt Evaluation | Phase 1 — Strategy & Contracts | Definition |
 | Phase 2 | RAG Evaluation (DeepEval) | Phase 2 — Execution Setup | ✅ Complete |
-| Phase 3 | Multi-Model Comparison | Phase 2 — Execution Setup | Planned |
+| Phase 3 | Multi-Model Comparison | Phase 2 — Execution Setup | ✅ Complete |
 | Phase 4 | Agent Evaluation | Phase 2 — Execution Setup | Planned |
 | Phase 5 | Observability & Monitoring | Phase 3 — Monitoring & Operations | Planned |
 
@@ -61,12 +61,12 @@ Goal: Compare multiple models on the same evaluation datasets.
 
 ### Milestones
 
-| # | Milestone | Description |
-|---|-----------|-------------|
-| C1 | Model Registry | Manage multiple provider/model configurations |
-| C2 | Parallel Execution | Run evaluations across models simultaneously |
-| C3 | Comparison Reports | Side-by-side metric comparison with visualizations |
-| C4 | Cost & Latency Tracking | Track token usage, cost, and response time per model |
+| # | Milestone | Description | Status |
+|---|-----------|-------------|--------|
+| C1 | Model Registry | `ModelSpec` dataclass for provider/model configs | ✅ Complete |
+| C2 | Parallel Execution | `ThreadPoolExecutor` runs models concurrently | ✅ Complete |
+| C3 | Comparison Reports | JSON report with per-model metrics, tokens, latency side-by-side | ✅ Complete |
+| C4 | Cost & Latency Tracking | Token count, latency captured per entry per model | ✅ Complete |
 
 ### Dependencies
 

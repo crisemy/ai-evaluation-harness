@@ -5,6 +5,7 @@ import logging
 import sys
 from pathlib import Path
 
+from harness.comparison import CompareConfig, ComparisonEngine, ModelSpec
 from harness.errors import HarnessError
 from harness.evaluator import EvalSample, EvaluationConfigInput, EvaluationEngine
 from harness.evaluator_rag import RAGEvaluator, RAGSample
@@ -62,6 +63,22 @@ def build_parser() -> argparse.ArgumentParser:
     rag_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
     rag_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
+    cmp_ = sub.add_parser("compare", help="Compare multiple models on the same dataset")
+    cmp_.add_argument("--dataset", "-d", required=True, help="Path to dataset file")
+    cmp_.add_argument(
+        "--models", nargs="+", default=["phi3", "llama3.2"],
+        help="Model names to compare (space-separated)",
+    )
+    cmp_.add_argument("--provider", "-p", default="ollama", help="Provider name")
+    cmp_.add_argument(
+        "--metrics", nargs="+", default=["exact_match", "contains"], help="Metrics to apply"
+    )
+    cmp_.add_argument("--output", "-o", default="comparison_report.json", help="Output report path")
+    cmp_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
+    cmp_.add_argument("--max-tokens", type=int, default=256, help="Max tokens per response")
+    cmp_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
+    cmp_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
+
     return parser
 
 
@@ -78,6 +95,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_eval(args)
     if args.command == "rag-eval":
         return _run_rag_eval(args)
+    if args.command == "compare":
+        return _run_compare(args)
 
     return 0
 
@@ -255,6 +274,71 @@ def _run_rag_eval(args: argparse.Namespace) -> int:
         logger.info("  Failed:  %d", summary.summary.failed)
         logger.info("  Rate:    %.1f%%", summary.summary.pass_rate * 100)
         logger.info("  Report:  %s", out_path)
+
+        return 0
+
+    except HarnessError as e:
+        logger.error("Harness error: %s", e)
+        return 1
+    except Exception as e:
+        logger.exception("Unexpected error: %s", e)
+        return 1
+
+
+def _run_compare(args: argparse.Namespace) -> int:
+    dataset_path = Path(args.dataset)
+    if not dataset_path.exists():
+        logger.error("Dataset not found: %s", dataset_path)
+        return 1
+
+    models = [ModelSpec(provider=args.provider, model=m, temperature=args.temperature, max_tokens=args.max_tokens) for m in args.models]
+
+    config = CompareConfig(
+        dataset_path=str(dataset_path),
+        models=models,
+        metrics=args.metrics,
+        limit=args.limit,
+    )
+
+    logger.info("Comparing %d models on %s", len(models), dataset_path)
+    for m in models:
+        logger.info("  - %s/%s", m.provider, m.model)
+
+    try:
+        engine = ComparisonEngine(config)
+        report = engine.run()
+
+        report_dict = report.to_dict()
+
+        import json
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(
+            json.dumps(report_dict, indent=2, default=str, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+        logger.info("")
+        logger.info("Comparison complete:")
+        logger.info("  Dataset:  %s", report.dataset_path)
+        logger.info("  Entries:  %d", report.total_entries)
+        logger.info("  Duration: %dms", report.duration_ms)
+        logger.info("")
+        for r in report.results:
+            model_label = f"{r.spec.provider}/{r.spec.model}"
+            if r.error:
+                logger.info("  %s: ✗ %s", model_label, r.error)
+            else:
+                logger.info(
+                    "  %s: ✓ %d/%d passed | tokens=%d | avg %.0fms/entry | score=%.3f",
+                    model_label,
+                    r.eval_summary.summary.passed if r.eval_summary else 0,
+                    r.eval_summary.summary.total_entries if r.eval_summary else 0,
+                    r.total_tokens,
+                    r.avg_latency_ms,
+                    r.eval_summary.summary.average_score if r.eval_summary else 0,
+                )
+        logger.info("  Report:  %s", output_path)
 
         return 0
 

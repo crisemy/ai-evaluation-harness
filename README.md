@@ -52,6 +52,15 @@ Project Stage: **Phase 2 Complete** — RAG Evaluation
 | R4 | Context & Chunking Spec | ✅ Complete |
 | R5 | End-to-End RAG Pipeline (`harness rag-eval`) | ✅ Complete |
 
+### Phase 3 — Multi-Model Comparison
+
+| # | Milestone | Status |
+|---|-----------|--------|
+| C1 | Model Registry (`ModelSpec`) | ✅ Complete |
+| C2 | Parallel Execution (`ThreadPoolExecutor`) | ✅ Complete |
+| C3 | Comparison Report (side-by-side metrics, tokens, latency) | ✅ Complete |
+| C4 | Cost & Latency Tracking | ✅ Complete |
+
 The full evaluation pipeline works end-to-end: **load dataset → execute prompts → evaluate metrics → generate report**.
 
 ## Target Audience

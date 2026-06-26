@@ -74,6 +74,7 @@ src/harness/
 ├── __main__.py              # python -m harness support
 ├── cli.py                   # CLI entry point (argparse)
 ├── errors.py                # Shared error types
+├── comparison.py            # ComparisonEngine, ModelSpec, CompareConfig, ComparisonReport
 ├── evaluator.py             # EvaluationEngine, EvalSample, EvaluationConfigInput
 ├── evaluator_rag.py         # RAGEvaluator, RAGSample
 ├── executor.py              # PromptExecutor, ExecutorConfig
