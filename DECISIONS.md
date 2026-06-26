@@ -130,3 +130,41 @@ Optional fields:
 - Dataset loaders must validate required fields
 - Dataset format must be versioned to support schema evolution
 - RAG datasets will extend this base schema with context documents
+
+---
+
+## ADR-005: Observability via TraceObserver, TimeSeriesStore, AlertEngine, DashboardGenerator
+
+- **Date:** 2026-06-26
+- **Status:** Accepted
+
+### Context
+
+As the evaluation harness grew to support prompt, RAG, and agent evaluations, teams needed visibility into evaluation results over time. Without observability, regressions could go unnoticed across evaluation runs.
+
+### Decision
+
+Phase 5 introduces four components for observability and monitoring:
+
+1. **TraceObserver** — A concrete implementation of the existing `Observer` interface that collects `ObservableEvent`s in memory, groups them by trace ID, and persists to NdJSON files. Each evaluation command (eval, rag-eval, agent-eval) creates trace events (evaluation_start, evaluation_end, entry_start, entry_end) with timing data.
+
+2. **TimeSeriesStore** — An append-only NdJSON store that records `MetricSnapshot` entries (metric_name, score, passed, threshold, timestamp, evaluation_id, config_snapshot) every time an evaluation runs. This enables trend analysis across evaluation runs.
+
+3. **AlertEngine** — A rule evaluation engine that checks threshold-based `AlertRule` definitions against the latest metric snapshots. Supports operators: gt, lt, gte, lte, eq. Ships with three default rules (Low Pass Rate, Score Drop, Tool Selection Degradation).
+
+4. **DashboardGenerator** — Generates a self-contained static HTML page with summary cards, an alert results table, and a metric history table with trend indicators.
+
+### Rationale
+
+- **TraceObserver** reuses the existing `Observer` interface without modifications
+- **TimeSeriesStore** uses NdJSON (newline-delimited JSON) for append-only writes — no database dependency
+- **AlertEngine** is rule-driven and extensible; users can define custom rules via JSON files
+- **DashboardGenerator** produces a zero-dependency HTML file — no server or build step required
+- All four components are isolated behind the CLI `harness monitor` subcommand
+
+### Consequences
+
+- Evaluation commands now automatically record time series data and traces
+- `.harness/` directory stores runtime artifacts (gitignored)
+- Custom alert rules can be provided via JSON file (`harness monitor alerts --rules my_rules.json`)
+- Dashboard is a static snapshot, not real-time

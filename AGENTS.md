@@ -6,11 +6,13 @@ All agents contributing to this repository must follow the rules below.
 
 ## Session Start
 
-At the beginning of every session, automatically read these files (in order) to establish project context:
+At the beginning of every session, the project context is automatically pre-loaded via `opencode.json` instructions (if opencode is used). The files loaded in order are:
 
 1. **CONTEXT.md** — Project overview, purpose, scope, and terminology.
 2. **ARCHITECTURE.md** — System design, module relationships, and data flow.
 3. **README.md** — User-facing documentation, setup, and usage instructions.
+
+For non-opencode agents, read these files manually at session start.
 
 ## Core Principles
 

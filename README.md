@@ -252,4 +252,4 @@ pytest tests/ -v
 
 ## License
 
-TBD
+MIT
