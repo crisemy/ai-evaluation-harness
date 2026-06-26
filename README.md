@@ -81,6 +81,13 @@ Project Stage: **Phase 5 Complete** — Observability & Monitoring
 
 The full evaluation pipeline works end-to-end: **load dataset → execute prompts → evaluate metrics → generate report**.
 
+### Upcoming Phases
+
+| Phase | Focus | Status |
+|-------|-------|--------|
+| Phase 6 | CI/CD Integration — GitHub Actions workflows, PR comments, artifact publishing | Planned |
+| Phase 7 | Extended Provider Support — Groq, OpenRouter, OpenAI, cost tracking | Planned |
+
 ## Target Audience
 
 * AI Engineers

@@ -9,6 +9,8 @@
 | Phase 3 | Multi-Model Comparison | Phase 2 — Execution Setup | ✅ Complete |
 | Phase 4 | Agent Evaluation | Phase 2 — Execution Setup | ✅ Complete |
 | Phase 5 | Observability & Monitoring | Phase 3 — Monitoring & Operations | ✅ Complete |
+| Phase 6 | CI/CD Integration | Phase 4 — Deployment & Automation | Planned |
+| Phase 7 | Extended Provider Support | Phase 2 — Execution Setup | Planned |
 
 ---
 
@@ -108,3 +110,40 @@ Goal: Provide continuous monitoring and alerting for evaluation results.
 - Observer interface must be implemented concretely
 - Time series data store for metric persistence
 - CLI must expose monitoring commands
+
+---
+
+## Phase 6 — CI/CD Integration
+
+Goal: Automate evaluation runs in CI/CD pipelines and surface results in pull requests.
+
+### Milestones
+
+| # | Milestone | Description | Status |
+|---|-----------|-------------|--------|
+| C1 | GitHub Actions Workflow | `harness-eval.yml` workflow that runs `harness eval` on push/PR | Planned |
+| C2 | PR Comment Reporting | Post evaluation summary as a PR comment with pass/fail breakdown | Planned |
+| C3 | Artifact Publishing | Upload reports, dashboards, and time series as build artifacts | Planned |
+| C4 | Scheduled Regression Runs | Daily/weekly cron workflow that builds time series history over time | Planned |
+| C5 | Status Badge | Generate a shields.io-compatible badge showing latest pass rate | Planned |
+
+### Dependencies
+
+- CLI must support non-interactive / headless mode
+- Exit codes must reliably signal pass/fail for CI gating
+- Report output paths must be configurable
+
+---
+
+## Phase 7 — Extended Provider Support
+
+Goal: Add OpenAI-compatible providers (Groq, OpenRouter, OpenAI, etc.) for broader model access.
+
+### Milestones
+
+| # | Milestone | Description | Status |
+|---|-----------|-------------|--------|
+| P1 | OpenAI-Compatible Provider | Support Groq, OpenRouter, and any OpenAI-API provider via a shared client | Planned |
+| P2 | Provider Configuration | API keys, base URLs, and model selections via environment variables and `.env` | Planned |
+| P3 | Cost Tracking | Token-based cost calculation per-provider with configurable pricing | Planned |
+| P4 | Retry & Rate Limiting | Exponential backoff, rate-limit handling, and request timeout configuration | Planned |

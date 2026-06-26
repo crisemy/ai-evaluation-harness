@@ -52,4 +52,27 @@ Continuous monitoring, alerting, and dashboarding for evaluation results over ti
 
 ---
 
-All planned phases are complete. Future work will be tracked in ROADMAP.md and VISION.md.
+All originally planned phases are complete. Additional phases are defined below and tracked in ROADMAP.md.
+
+---
+
+## Phase 6 — CI/CD Integration (Planned)
+
+Automate evaluation runs in CI/CD pipelines and surface results in pull requests.
+
+**Key deliverables:**
+- GitHub Actions workflow (`harness-eval.yml`) triggered on push and PR
+- PR comment reporting with pass/fail breakdown
+- Report and dashboard artifact publishing
+- Scheduled cron workflows for regression tracking
+- Status badge generation
+
+## Phase 7 — Extended Provider Support (Planned)
+
+Add OpenAI-compatible providers (Groq, OpenRouter, OpenAI, Anthropic, etc.) for broader model access.
+
+**Key deliverables:**
+- OpenAI-compatible provider client (covers Groq, OpenRouter, OpenAI)
+- Environment-variable-based configuration (API keys, base URLs)
+- Per-provider cost tracking with token-based pricing
+- Retry logic and rate-limit handling
