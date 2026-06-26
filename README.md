@@ -163,7 +163,7 @@ The full evaluation pipeline works end-to-end: **load dataset → execute prompt
 
 ## Relationship to AI QA Core Framework
 
-This project follows the methodology defined in the [AI QA Core Framework](ai-qa-core-framework/) (`ai-qa-core-framework/`). The CORE framework provides the governing methodology, contracts, and skills; this project is the concrete implementation of an AI evaluation tool within that framework.
+This project follows the methodology defined in the AI QA Core Framework. The CORE framework provides the governing methodology, contracts, and skills; this project is the concrete implementation of an AI evaluation tool within that framework.
 
 ## Setup
 
