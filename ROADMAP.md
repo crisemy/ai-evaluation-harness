@@ -5,7 +5,7 @@
 | Phase | Focus | CORE Phase Alignment | Status |
 |-------|-------|----------------------|--------|
 | MVP | Prompt Evaluation | Phase 1 — Strategy & Contracts | Definition |
-| Phase 2 | RAG Evaluation (DeepEval) | Phase 2 — Execution Setup | Planned |
+| Phase 2 | RAG Evaluation (DeepEval) | Phase 2 — Execution Setup | ✅ Complete |
 | Phase 3 | Multi-Model Comparison | Phase 2 — Execution Setup | Planned |
 | Phase 4 | Agent Evaluation | Phase 2 — Execution Setup | Planned |
 | Phase 5 | Observability & Monitoring | Phase 3 — Monitoring & Operations | Planned |
@@ -40,13 +40,13 @@ Goal: Extend the harness to evaluate Retrieval-Augmented Generation pipelines.
 
 ### Milestones
 
-| # | Milestone | Description |
-|---|-----------|-------------|
-| R1 | DeepEval Integration | Integrate DeepEval as the RAG evaluation backend |
-| R2 | Context Provider | Abstract interface for document retrieval sources |
-| R3 | RAG Metrics | Faithfulness, answer relevancy, context precision, context recall |
-| R4 | Chunking & Retrieval Spec | Define how documents are chunked and retrieved |
-| R5 | End-to-End RAG Pipeline | Full evaluation cycle with RAG datasets |
+| # | Milestone | Description | Status |
+|---|-----------|-------------|--------|
+| R1 | DeepEval Integration | Integrate DeepEval as the RAG evaluation backend | ✅ Complete |
+| R2 | Context Provider | Abstract interface for document retrieval sources | ✅ Complete |
+| R3 | RAG Metrics | Faithfulness, answer relevancy, context precision, context recall | ✅ Complete |
+| R4 | Chunking & Retrieval Spec | `Document` dataclass + `DatasetContextProvider` for dataset-origin context | ✅ Complete |
+| R5 | End-to-End RAG Pipeline | `harness rag-eval` command wiring the full RAG pipeline | ✅ Complete |
 
 ### Dependencies
 

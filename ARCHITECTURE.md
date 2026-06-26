@@ -75,11 +75,13 @@ src/harness/
 ├── cli.py                   # CLI entry point (argparse)
 ├── errors.py                # Shared error types
 ├── evaluator.py             # EvaluationEngine, EvalSample, EvaluationConfigInput
+├── evaluator_rag.py         # RAGEvaluator, RAGSample
 ├── executor.py              # PromptExecutor, ExecutorConfig
 ├── contracts/               # Data contracts (dataclasses)
 │   ├── dataset.py
 │   ├── execution.py
 │   ├── evaluation.py
+│   ├── rag.py               # Document, DocumentChunk, RAGEvaluationInput
 │   ├── report.py
 │   └── trace.py
 ├── interfaces/              # Abstract base classes
@@ -87,17 +89,25 @@ src/harness/
 │   ├── provider.py
 │   ├── metric.py
 │   ├── reporter.py
-│   └── observer.py
+│   ├── observer.py
+│   └── context_provider.py  # ContextProvider — abstract retrieval interface
 ├── loaders/                 # Concrete dataset loaders
 │   ├── __init__.py
 │   └── json_loader.py       # JSONDatasetLoader
 ├── metrics/                 # Concrete metric implementations
 │   ├── __init__.py
 │   ├── exact_match.py       # ExactMatch — string equality
-│   └── contains.py          # Contains — substring search
+│   ├── contains.py          # Contains — substring search
+│   └── rag/                 # DeepEval-wrapped RAG metrics
+│       ├── __init__.py
+│       ├── faithfulness.py       # FaithfulnessMetric
+│       ├── answer_relevancy.py   # AnswerRelevancyMetric
+│       ├── context_precision.py  # ContextualPrecisionMetric
+│       └── context_recall.py     # ContextualRecallMetric
 ├── providers/               # Concrete LLM provider implementations
 │   ├── __init__.py
-│   └── ollama.py            # OllamaProvider — HTTP client for local Ollama
+│   ├── ollama.py            # OllamaProvider — HTTP client for local Ollama
+│   └── context.py           # DatasetContextProvider — context from dataset entries
 └── reporters/               # Concrete report generators
     ├── __init__.py
     └── json_reporter.py     # JSONReporter — writes EvaluationSummary to JSON

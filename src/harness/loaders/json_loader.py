@@ -8,7 +8,7 @@ from harness.contracts.dataset import Dataset, DatasetEntry, DatasetMetadata, Di
 from harness.errors import FormatError, LoadError, ValidationError
 from harness.interfaces.dataset_loader import DatasetLoader
 
-SUPPORTED_VERSIONS = {"1.0"}
+SUPPORTED_VERSIONS = {"1.0", "1.1"}
 
 
 class JSONDatasetLoader(DatasetLoader):
@@ -86,6 +86,11 @@ class JSONDatasetLoader(DatasetLoader):
             except ValueError:
                 pass
 
+        metadata = raw.get("metadata") or {}
+        context_docs = raw.get("context_documents")
+        if context_docs is not None:
+            metadata["context_documents"] = context_docs
+
         return DatasetEntry(
             id=entry_id,
             input=input_text,
@@ -93,7 +98,7 @@ class JSONDatasetLoader(DatasetLoader):
             category=raw.get("category"),
             difficulty=difficulty,
             tags=raw.get("tags"),
-            metadata=raw.get("metadata"),
+            metadata=metadata or None,
         )
 
     def validate(self, entry: dict) -> None:

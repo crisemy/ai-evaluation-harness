@@ -28,7 +28,9 @@ AI Evaluation Harness aims to provide:
 
 ## Current Status
 
-Project Stage: **MVP Complete** — All 6 milestones done
+Project Stage: **Phase 2 Complete** — RAG Evaluation
+
+### MVP (Prompt Evaluation)
 
 | # | Milestone | Status |
 |---|-----------|--------|
@@ -39,6 +41,16 @@ Project Stage: **MVP Complete** — All 6 milestones done
 | M4 | Evaluation Engine | ✅ Complete |
 | M5 | Report Generator | ✅ Complete |
 | M6 | CLI Entry Point | ✅ Complete |
+
+### Phase 2 — RAG Evaluation
+
+| # | Milestone | Status |
+|---|-----------|--------|
+| R1 | DeepEval Integration | ✅ Complete |
+| R2 | Context Provider | ✅ Complete |
+| R3 | RAG Metrics (Faithfulness, Relevancy, Precision, Recall) | ✅ Complete |
+| R4 | Context & Chunking Spec | ✅ Complete |
+| R5 | End-to-End RAG Pipeline (`harness rag-eval`) | ✅ Complete |
 
 The full evaluation pipeline works end-to-end: **load dataset → execute prompts → evaluate metrics → generate report**.
 

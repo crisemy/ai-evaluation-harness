@@ -1,0 +1,38 @@
+{
+  "format_version": "1.1",
+  "dataset": {
+    "name": "rag-sample",
+    "description": "Sample RAG evaluation dataset",
+    "entries": [
+      {
+        "id": "rag-001",
+        "input": "What is the refund policy?",
+        "expected_output": "Full refund within 30 days",
+        "context_documents": [
+          {
+            "id": "doc-1",
+            "text": "Customers may request a full refund within 30 days of purchase.",
+            "source": "policy.md"
+          },
+          {
+            "id": "doc-2",
+            "text": "Refunds are processed within 5-10 business days.",
+            "source": "policy.md"
+          }
+        ]
+      },
+      {
+        "id": "rag-002",
+        "input": "What are the business hours?",
+        "expected_output": "Open Monday to Friday, 9 AM to 6 PM",
+        "context_documents": [
+          {
+            "id": "doc-3",
+            "text": "Our business hours are Monday through Friday, 9:00 AM to 6:00 PM.",
+            "source": "hours.md"
+          }
+        ]
+      }
+    ]
+  }
+}
