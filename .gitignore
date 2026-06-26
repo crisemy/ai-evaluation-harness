@@ -11,6 +11,12 @@ build/
 *.log
 data/raw/
 
+# Run artifacts
+.harness/
+dashboard.html
+report.json
+*.ndjson
+
 # Datasets — regenerated via scripts/prepare_kaggle_dataset.py
 datasets/
 !datasets/.gitkeep

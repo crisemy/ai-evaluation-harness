@@ -194,26 +194,54 @@ src/harness/
 ### Evaluation Commands
 
 ```powershell
-harness eval -d dataset.json -m phi3 --metrics exact_match contains
-harness rag-eval -d rag_dataset.json -m phi3 --metrics faithfulness answer_relevancy
-harness agent-eval -d agent_dataset.json -m phi3 --metrics step_correctness goal_achievement
-harness compare -d dataset.json --models phi3 llama3.2 --metrics exact_match
+# Standard evaluation (1456 QA entries, runs against phi3)
+harness eval -d datasets/qa_kaggle.json -m phi3 --metrics exact_match contains --limit 5
+
+# RAG evaluation (requires a dataset with context_documents in metadata)
+harness rag-eval -d datasets/rag_dataset.json -m phi3 --metrics faithfulness answer_relevancy
+
+# Agent trajectory evaluation (requires trajectory data in metadata)
+harness agent-eval -d datasets/agent_dataset.json -m phi3 --metrics step_correctness goal_achievement
+
+# Multi-model comparison
+harness compare -d datasets/qa_kaggle.json --models phi3 llama3.2 --metrics exact_match contains --limit 5
 ```
+
+> Use `--limit 5` for quick smoke tests. Omit it to run against all entries.
 
 ### Observability Commands (Phase 5)
 
+After running evaluations, traces and time series data are automatically recorded to `.harness/traces/` and `.harness/timeseries.ndjson`.
+
 ```powershell
-# Show latest evaluation status from time series history
+# Show latest metric scores from history
 harness monitor status
 
-# Evaluate alert rules against historical metric snapshots
+# Evaluate default alert rules (Low Pass Rate, Score Drop, Tool Selection)
 harness monitor alerts
 
 # Generate an HTML observability dashboard
 harness monitor dashboard -o dashboard.html
+
+# Open the dashboard
+start dashboard.html
 ```
 
-Traces and time series data are automatically recorded during `eval`, `rag-eval`, and `agent-eval` runs into `.harness/traces/` and `.harness/timeseries.ndjson`.
+### Full Pipeline (end-to-end)
+
+```powershell
+# 1. Run tests
+pytest tests/ -v
+
+# 2. Quick eval (5 entries)
+harness eval -d datasets/qa_kaggle.json -m phi3 --limit 5
+
+# 3. Check results
+harness monitor status
+
+# 4. Generate dashboard
+harness monitor dashboard -o dashboard.html
+```
 
 ## Running Tests
 
