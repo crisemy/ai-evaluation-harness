@@ -7,7 +7,7 @@
 | MVP | Prompt Evaluation | Phase 1 — Strategy & Contracts | Definition |
 | Phase 2 | RAG Evaluation (DeepEval) | Phase 2 — Execution Setup | ✅ Complete |
 | Phase 3 | Multi-Model Comparison | Phase 2 — Execution Setup | ✅ Complete |
-| Phase 4 | Agent Evaluation | Phase 2 — Execution Setup | Planned |
+| Phase 4 | Agent Evaluation | Phase 2 — Execution Setup | ✅ Complete |
 | Phase 5 | Observability & Monitoring | Phase 3 — Monitoring & Operations | Planned |
 
 ---
@@ -81,12 +81,12 @@ Goal: Evaluate multi-step AI agent behaviors and tool-use quality.
 
 ### Milestones
 
-| # | Milestone | Description |
-|---|-----------|-------------|
-| A1 | Trajectory Capture | Record agent action sequences and intermediate states |
-| A2 | Step-Level Metrics | Evaluate correctness of each step in a trajectory |
-| A3 | Outcome Metrics | Evaluate whether the agent achieved the goal |
-| A4 | Tool-Use Evaluation | Validate tool selection and parameter correctness |
+| # | Milestone | Description | Status |
+|---|-----------|-------------|--------|
+| A1 | Trajectory Capture | `AgentStep`, `AgentTrajectory` contracts — store action sequences and intermediate states | ✅ Complete |
+| A2 | Step-Level Metrics | `StepCorrectness` — compare actual vs expected steps in a trajectory | ✅ Complete |
+| A3 | Outcome Metrics | `GoalAchievement` — evaluate if final answer matches expected output | ✅ Complete |
+| A4 | Tool-Use Evaluation | `ToolSelection` — F1-based tool usage scoring + `TrajectoryCoherence` — step sequence quality | ✅ Complete |
 
 ---
 

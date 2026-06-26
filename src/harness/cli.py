@@ -9,10 +9,12 @@ from harness.comparison import CompareConfig, ComparisonEngine, ModelSpec
 from harness.errors import HarnessError
 from harness.evaluator import EvalSample, EvaluationConfigInput, EvaluationEngine
 from harness.evaluator_rag import RAGEvaluator, RAGSample
+from harness.evaluator_agent import AgentEvaluator, AgentSample, AgentTrajectory
 from harness.executor import ExecutorConfig, PromptExecutor
 from harness.loaders import JSONDatasetLoader
 from harness.metrics import Contains, ExactMatch
 from harness.metrics.rag import Faithfulness, AnswerRelevancy, ContextPrecision, ContextRecall
+from harness.metrics.agent import StepCorrectness, GoalAchievement, ToolSelection, TrajectoryCoherence
 from harness.providers import OllamaProvider
 from harness.providers.context import DatasetContextProvider
 from harness.reporters import JSONReporter
@@ -26,6 +28,10 @@ METRIC_REGISTRY = {
     "answer_relevancy": AnswerRelevancy,
     "context_precision": ContextPrecision,
     "context_recall": ContextRecall,
+    "step_correctness": StepCorrectness,
+    "goal_achievement": GoalAchievement,
+    "tool_selection": ToolSelection,
+    "trajectory_coherence": TrajectoryCoherence,
 }
 
 
@@ -63,6 +69,21 @@ def build_parser() -> argparse.ArgumentParser:
     rag_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
     rag_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
+    agent_ = sub.add_parser("agent-eval", help="Run an agent trajectory evaluation")
+    agent_.add_argument("--dataset", "-d", required=True, help="Path to agent dataset file")
+    agent_.add_argument("--provider", "-p", default="ollama", help="Provider name")
+    agent_.add_argument("--model", "-m", default="phi3", help="Model name")
+    agent_.add_argument(
+        "--metrics", nargs="+",
+        default=["step_correctness", "goal_achievement", "tool_selection", "trajectory_coherence"],
+        help="Agent metrics to apply",
+    )
+    agent_.add_argument("--output", "-o", default="agent_report.json", help="Output report path")
+    agent_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
+    agent_.add_argument("--max-tokens", type=int, default=512, help="Max tokens per response")
+    agent_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
+    agent_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
+
     cmp_ = sub.add_parser("compare", help="Compare multiple models on the same dataset")
     cmp_.add_argument("--dataset", "-d", required=True, help="Path to dataset file")
     cmp_.add_argument(
@@ -95,6 +116,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_eval(args)
     if args.command == "rag-eval":
         return _run_rag_eval(args)
+    if args.command == "agent-eval":
+        return _run_agent_eval(args)
     if args.command == "compare":
         return _run_compare(args)
 
@@ -269,6 +292,102 @@ def _run_rag_eval(args: argparse.Namespace) -> int:
 
         logger.info("")
         logger.info("RAG Evaluation complete:")
+        logger.info("  Entries: %d", summary.summary.total_entries)
+        logger.info("  Passed:  %d", summary.summary.passed)
+        logger.info("  Failed:  %d", summary.summary.failed)
+        logger.info("  Rate:    %.1f%%", summary.summary.pass_rate * 100)
+        logger.info("  Report:  %s", out_path)
+
+        return 0
+
+    except HarnessError as e:
+        logger.error("Harness error: %s", e)
+        return 1
+    except Exception as e:
+        logger.exception("Unexpected error: %s", e)
+        return 1
+
+
+def _run_agent_eval(args: argparse.Namespace) -> int:
+    dataset_path = Path(args.dataset)
+    if not dataset_path.exists():
+        logger.error("Dataset not found: %s", dataset_path)
+        return 1
+
+    metrics = []
+    for name in args.metrics:
+        cls = METRIC_REGISTRY.get(name)
+        if cls is None:
+            logger.error("Unknown metric: %s. Available: %s", name, list(METRIC_REGISTRY))
+            return 1
+        metrics.append(cls())
+
+    try:
+        loader = JSONDatasetLoader()
+        dataset = loader.load(str(dataset_path))
+        entries = dataset.entries
+        if args.limit > 0:
+            entries = entries[: args.limit]
+
+        logger.info("Loaded %d agent entries from %s", len(entries), dataset_path)
+
+        agent_samples = []
+        for entry in entries:
+            raw = entry.metadata or {}
+            trajectory_raw = raw.get("trajectory", {})
+            steps_raw = trajectory_raw.get("steps", [])
+
+            from harness.contracts.agent import AgentStep
+            steps = [
+                AgentStep(
+                    step_index=s.get("step_index", i),
+                    thought=s.get("thought"),
+                    tool_name=s.get("tool_name"),
+                    tool_input=s.get("tool_input"),
+                    tool_output=s.get("tool_output"),
+                    duration_ms=s.get("duration_ms"),
+                )
+                for i, s in enumerate(steps_raw)
+            ]
+
+            trajectory = AgentTrajectory(
+                entry_id=entry.id,
+                task=entry.input,
+                steps=steps,
+                final_answer=trajectory_raw.get("final_answer"),
+                total_duration_ms=trajectory_raw.get("total_duration_ms", 0),
+                total_tokens=trajectory_raw.get("total_tokens", 0),
+            )
+
+            expected_trajectory = raw.get("expected_trajectory")
+            expected_tools = raw.get("expected_tools")
+
+            agent_samples.append(AgentSample(
+                task=entry.input,
+                expected_output=entry.expected_output,
+                trajectory=trajectory,
+                expected_trajectory=expected_trajectory,
+                expected_tools=expected_tools,
+            ))
+
+        logger.info("Evaluating %d agent trajectories...", len(agent_samples))
+
+        eval_cfg = EvaluationConfigInput(
+            dataset_path=str(dataset_path),
+            dataset_format="json",
+            provider=args.provider,
+            model=args.model,
+            metrics=args.metrics,
+        )
+        agent_evaluator = AgentEvaluator(metrics, config=eval_cfg)
+        summary = agent_evaluator.evaluate(agent_samples)
+
+        reporter = JSONReporter()
+        report = reporter.generate(summary)
+        out_path = reporter.write(report, args.output)
+
+        logger.info("")
+        logger.info("Agent Evaluation complete:")
         logger.info("  Entries: %d", summary.summary.total_entries)
         logger.info("  Passed:  %d", summary.summary.passed)
         logger.info("  Failed:  %d", summary.summary.failed)

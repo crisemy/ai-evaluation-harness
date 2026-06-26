@@ -77,11 +77,13 @@ src/harness/
 ├── comparison.py            # ComparisonEngine, ModelSpec, CompareConfig, ComparisonReport
 ├── evaluator.py             # EvaluationEngine, EvalSample, EvaluationConfigInput
 ├── evaluator_rag.py         # RAGEvaluator, RAGSample
+├── evaluator_agent.py       # AgentEvaluator, AgentSample
 ├── executor.py              # PromptExecutor, ExecutorConfig
 ├── contracts/               # Data contracts (dataclasses)
 │   ├── dataset.py
 │   ├── execution.py
 │   ├── evaluation.py
+│   ├── agent.py              # AgentStep, AgentTrajectory, AgentEvaluationInput
 │   ├── rag.py               # Document, DocumentChunk, RAGEvaluationInput
 │   ├── report.py
 │   └── trace.py
@@ -99,12 +101,18 @@ src/harness/
 │   ├── __init__.py
 │   ├── exact_match.py       # ExactMatch — string equality
 │   ├── contains.py          # Contains — substring search
-│   └── rag/                 # DeepEval-wrapped RAG metrics
+│   ├── rag/                 # DeepEval-wrapped RAG metrics
+│   │   ├── __init__.py
+│   │   ├── faithfulness.py       # FaithfulnessMetric
+│   │   ├── answer_relevancy.py   # AnswerRelevancyMetric
+│   │   ├── context_precision.py  # ContextualPrecisionMetric
+│   │   └── context_recall.py     # ContextualRecallMetric
+│   └── agent/               # Agent trajectory metrics
 │       ├── __init__.py
-│       ├── faithfulness.py       # FaithfulnessMetric
-│       ├── answer_relevancy.py   # AnswerRelevancyMetric
-│       ├── context_precision.py  # ContextualPrecisionMetric
-│       └── context_recall.py     # ContextualRecallMetric
+│       ├── step_correctness.py   # StepCorrectness — step-level accuracy
+│       ├── goal_achievement.py   # GoalAchievement — final answer match
+│       ├── tool_selection.py     # ToolSelection — F1 tool usage score
+│       └── trajectory_coherence.py  # TrajectoryCoherence — step quality
 ├── providers/               # Concrete LLM provider implementations
 │   ├── __init__.py
 │   ├── ollama.py            # OllamaProvider — HTTP client for local Ollama

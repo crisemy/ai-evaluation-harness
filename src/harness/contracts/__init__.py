@@ -1,3 +1,4 @@
+from harness.contracts.agent import AgentStep, AgentTrajectory, AgentEvaluationInput
 from harness.contracts.dataset import Dataset, DatasetEntry, DatasetMetadata
 from harness.contracts.execution import (
     ExecutionRequest,
@@ -10,6 +11,9 @@ from harness.contracts.report import EvaluationSummary, Report, ReportMetadata
 from harness.contracts.trace import ObservableEvent, Trace
 
 __all__ = [
+    "AgentStep",
+    "AgentTrajectory",
+    "AgentEvaluationInput",
     "Dataset",
     "DatasetEntry",
     "DatasetMetadata",
