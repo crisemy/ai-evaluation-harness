@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 from harness.comparison import CompareConfig, ComparisonEngine, ModelSpec
+from harness.contracts.trace import ObservableEvent
 from harness.errors import HarnessError
 from harness.evaluator import EvalSample, EvaluationConfigInput, EvaluationEngine
 from harness.evaluator_rag import RAGEvaluator, RAGSample
@@ -15,6 +19,8 @@ from harness.loaders import JSONDatasetLoader
 from harness.metrics import Contains, ExactMatch
 from harness.metrics.rag import Faithfulness, AnswerRelevancy, ContextPrecision, ContextRecall
 from harness.metrics.agent import StepCorrectness, GoalAchievement, ToolSelection, TrajectoryCoherence
+from harness.observability import AlertEngine, AlertRule, DashboardGenerator, TimeSeriesStore
+from harness.observers import TraceObserver
 from harness.providers import OllamaProvider
 from harness.providers.context import DatasetContextProvider
 from harness.reporters import JSONReporter
@@ -100,6 +106,24 @@ def build_parser() -> argparse.ArgumentParser:
     cmp_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
     cmp_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
+    mon_ = sub.add_parser("monitor", help="Observability and monitoring commands")
+    mon_sub = mon_.add_subparsers(dest="monitor_action", required=True)
+
+    st_ = mon_sub.add_parser("status", help="Show latest evaluation status and metrics")
+    st_.add_argument("--store", default=".harness/timeseries.ndjson", help="Time series store path")
+    st_.add_argument("--verbose", "-v", action="store_true", help="Show detailed snapshot info")
+
+    al_ = mon_sub.add_parser("alerts", help="Evaluate alert rules against time series history")
+    al_.add_argument("--store", default=".harness/timeseries.ndjson", help="Time series store path")
+    al_.add_argument("--rules", help="Path to JSON alert rules file (optional, uses defaults)")
+    al_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
+
+    db_ = mon_sub.add_parser("dashboard", help="Generate an HTML observability dashboard")
+    db_.add_argument("--store", default=".harness/timeseries.ndjson", help="Time series store path")
+    db_.add_argument("--output", "-o", default="dashboard.html", help="Output HTML file path")
+    db_.add_argument("--title", default="AI Evaluation Harness Dashboard", help="Dashboard title")
+    db_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
+
     return parser
 
 
@@ -120,6 +144,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_agent_eval(args)
     if args.command == "compare":
         return _run_compare(args)
+    if args.command == "monitor":
+        return _run_monitor(args)
 
     return 0
 
@@ -137,6 +163,9 @@ def _run_eval(args: argparse.Namespace) -> int:
             logger.error("Unknown metric: %s. Available: %s", name, list(METRIC_REGISTRY))
             return 1
         metrics.append(cls())
+
+    tracer = TraceObserver()
+    time_store = TimeSeriesStore(".harness/timeseries.ndjson")
 
     try:
         loader = JSONDatasetLoader()
@@ -156,11 +185,22 @@ def _run_eval(args: argparse.Namespace) -> int:
 
         logger.info("Loaded %d entries from %s", len(entries), dataset_path)
 
+        eval_id = uuid.uuid4().hex[:12]
+        _attach_trace_observer(tracer, eval_id, "eval", str(dataset_path),
+                               args.provider, args.model, len(entries))
+
         responses = []
-        for entry in entries:
+        for i, entry in enumerate(entries):
             logger.info("Executing entry %s...", entry.id)
+            tracer.emit(ObservableEvent(event_type="entry_start", component="executor",
+                                        timestamp=datetime.now(timezone.utc),
+                                        data={"entry_id": entry.id, "index": i}))
             resp = executor.execute_entry(entry)
             responses.append(EvalSample(response=resp, expected_output=entry.expected_output))
+            tracer.emit(ObservableEvent(event_type="entry_end", component="executor",
+                                        timestamp=datetime.now(timezone.utc),
+                                        data={"entry_id": entry.id, "tokens": resp.token_usage.total_tokens},
+                                        duration_ms=resp.latency_ms))
             logger.info(
                 "  → %d tokens in %dms",
                 resp.token_usage.total_tokens,
@@ -176,6 +216,10 @@ def _run_eval(args: argparse.Namespace) -> int:
         )
         engine = EvaluationEngine(metrics, eval_config)
         summary = engine.evaluate(responses)
+
+        time_store.record(summary)
+        _finalize_trace_observer(tracer, eval_id, summary.duration_ms,
+                                 summary.summary.passed, summary.summary.total_entries)
 
         reporter = JSONReporter()
         report = reporter.generate(summary)
@@ -213,6 +257,9 @@ def _run_rag_eval(args: argparse.Namespace) -> int:
             return 1
         metrics.append(cls())
 
+    tracer = TraceObserver()
+    time_store = TimeSeriesStore(".harness/timeseries.ndjson")
+
     try:
         loader = JSONDatasetLoader()
         provider = OllamaProvider()
@@ -230,6 +277,10 @@ def _run_rag_eval(args: argparse.Namespace) -> int:
             entries = entries[: args.limit]
 
         logger.info("Loaded %d RAG entries from %s", len(entries), dataset_path)
+
+        eval_id = uuid.uuid4().hex[:12]
+        _attach_trace_observer(tracer, eval_id, "rag-eval", str(dataset_path),
+                               args.provider, args.model, len(entries))
 
         rag_samples = []
         for entry in entries:
@@ -258,6 +309,10 @@ def _run_rag_eval(args: argparse.Namespace) -> int:
             context_text = "\n\n".join(d["text"] for d in sample["context_documents"])
             prompt = f"Context:\n{context_text}\n\nQuestion: {sample['query']}\n\nAnswer based on the context above."
 
+            tracer.emit(ObservableEvent(event_type="entry_start", component="executor",
+                                        timestamp=datetime.now(timezone.utc),
+                                        data={"entry_id": entry_id, "type": "rag"}))
+
             resp = executor.execute_entry(
                 type("_", (), {
                     "id": entry_id,
@@ -265,6 +320,11 @@ def _run_rag_eval(args: argparse.Namespace) -> int:
                     "expected_output": sample["expected_output"],
                 })()
             )
+
+            tracer.emit(ObservableEvent(event_type="entry_end", component="executor",
+                                        timestamp=datetime.now(timezone.utc),
+                                        data={"entry_id": entry_id, "tokens": resp.token_usage.total_tokens},
+                                        duration_ms=resp.latency_ms))
 
             logger.info("  → %d tokens in %dms", resp.token_usage.total_tokens, resp.latency_ms)
 
@@ -285,6 +345,10 @@ def _run_rag_eval(args: argparse.Namespace) -> int:
         )
         rag_evaluator = RAGEvaluator(metrics, config=eval_cfg)
         summary = rag_evaluator.evaluate(executed_samples)
+
+        time_store.record(summary)
+        _finalize_trace_observer(tracer, eval_id, summary.duration_ms,
+                                 summary.summary.passed, summary.summary.total_entries)
 
         reporter = JSONReporter()
         report = reporter.generate(summary)
@@ -322,6 +386,9 @@ def _run_agent_eval(args: argparse.Namespace) -> int:
             return 1
         metrics.append(cls())
 
+    tracer = TraceObserver()
+    time_store = TimeSeriesStore(".harness/timeseries.ndjson")
+
     try:
         loader = JSONDatasetLoader()
         dataset = loader.load(str(dataset_path))
@@ -331,8 +398,16 @@ def _run_agent_eval(args: argparse.Namespace) -> int:
 
         logger.info("Loaded %d agent entries from %s", len(entries), dataset_path)
 
+        eval_id = uuid.uuid4().hex[:12]
+        _attach_trace_observer(tracer, eval_id, "agent-eval", str(dataset_path),
+                               args.provider, args.model, len(entries))
+
         agent_samples = []
-        for entry in entries:
+        for i, entry in enumerate(entries):
+            tracer.emit(ObservableEvent(event_type="entry_start", component="agent_loader",
+                                        timestamp=datetime.now(timezone.utc),
+                                        data={"entry_id": entry.id, "index": i}))
+
             raw = entry.metadata or {}
             trajectory_raw = raw.get("trajectory", {})
             steps_raw = trajectory_raw.get("steps", [])
@@ -370,6 +445,10 @@ def _run_agent_eval(args: argparse.Namespace) -> int:
                 expected_tools=expected_tools,
             ))
 
+            tracer.emit(ObservableEvent(event_type="entry_loaded", component="agent_loader",
+                                        timestamp=datetime.now(timezone.utc),
+                                        data={"entry_id": entry.id, "steps": len(steps)}))
+
         logger.info("Evaluating %d agent trajectories...", len(agent_samples))
 
         eval_cfg = EvaluationConfigInput(
@@ -381,6 +460,10 @@ def _run_agent_eval(args: argparse.Namespace) -> int:
         )
         agent_evaluator = AgentEvaluator(metrics, config=eval_cfg)
         summary = agent_evaluator.evaluate(agent_samples)
+
+        time_store.record(summary)
+        _finalize_trace_observer(tracer, eval_id, summary.duration_ms,
+                                 summary.summary.passed, summary.summary.total_entries)
 
         reporter = JSONReporter()
         report = reporter.generate(summary)
@@ -467,6 +550,137 @@ def _run_compare(args: argparse.Namespace) -> int:
     except Exception as e:
         logger.exception("Unexpected error: %s", e)
         return 1
+
+
+def _run_monitor(args: argparse.Namespace) -> int:
+    store = TimeSeriesStore(args.store)
+
+    if args.monitor_action == "status":
+        time_series = store.get_time_series()
+        if not time_series:
+            logger.info("No time series data found at %s", args.store)
+            return 0
+
+        logger.info("Evaluation Status — %d metrics tracked", len(time_series))
+        for ts in sorted(time_series, key=lambda t: t.metric_name):
+            snaps = ts.snapshots
+            latest = snaps[-1]
+            avg_score = sum(s.score for s in snaps) / len(snaps)
+            logger.info(
+                "  %s: latest=%.3f avg=%.3f count=%d %s",
+                ts.metric_name,
+                latest.score,
+                avg_score,
+                len(snaps),
+                "✓" if latest.passed else "✗",
+            )
+            if args.verbose:
+                for s in snaps[-5:]:
+                    logger.info("    [%s] score=%.3f passed=%s eval=%s",
+                        s.timestamp.strftime("%Y-%m-%d %H:%M"),
+                        s.score, s.passed, s.evaluation_id[:8])
+        return 0
+
+    if args.monitor_action == "alerts":
+        snapshots = store.read_all()
+        if not snapshots:
+            logger.info("No time series data found at %s", args.store)
+            return 0
+
+        rules: list[AlertRule] = []
+        if args.rules:
+            rules_path = Path(args.rules)
+            if not rules_path.exists():
+                logger.error("Rules file not found: %s", args.rules)
+                return 1
+            raw = json.loads(rules_path.read_text(encoding="utf-8"))
+            rules = [AlertRule(**r) for r in raw]
+        else:
+            from harness.observability.alerts import DefaultAlertRules
+            rules = DefaultAlertRules.get_defaults()
+
+        engine = AlertEngine(rules)
+        results = engine.evaluate(snapshots)
+
+        triggered = [r for r in results if r.triggered]
+        logger.info("Alert Results — %d triggered / %d total", len(triggered), len(results))
+        for r in results:
+            status = "TRIGGERED" if r.triggered else "OK"
+            logger.info("  [%s] %s — %s", status, r.rule_name, r.message)
+        return 1 if triggered else 0
+
+    if args.monitor_action == "dashboard":
+        time_series = store.get_time_series()
+        if not time_series:
+            logger.info("No time series data found at %s", args.store)
+            return 0
+
+        alert_results: list = []
+        from harness.observability.alerts import DefaultAlertRules
+        engine = AlertEngine(DefaultAlertRules.get_defaults())
+        alert_results = engine.evaluate(store.read_all())
+
+        from harness.observability import DashboardConfig
+        cfg = DashboardConfig(title=args.title)
+        gen = DashboardGenerator(cfg)
+        html = gen.generate(time_series, alert_results)
+
+        out = Path(args.output)
+        out.write_text(html, encoding="utf-8")
+        logger.info("Dashboard written to %s", out.resolve())
+        return 0
+
+    return 0
+
+
+def _attach_trace_observer(
+    tracer: TraceObserver,
+    evaluation_id: str,
+    command: str,
+    dataset_path: str,
+    provider: str,
+    model: str,
+    entry_count: int,
+) -> None:
+    trace_id = uuid.uuid4().hex[:12]
+    tracer.set_context(trace_id, evaluation_id)
+    tracer.emit(ObservableEvent(
+        event_type="evaluation_start",
+        component=command,
+        timestamp=datetime.now(timezone.utc),
+        data={
+            "dataset_path": dataset_path,
+            "provider": provider,
+            "model": model,
+            "entry_count": entry_count,
+        },
+    ))
+
+
+def _finalize_trace_observer(
+    tracer: TraceObserver,
+    evaluation_id: str,
+    duration_ms: int,
+    passed: int,
+    total: int,
+    traces_dir: str = ".harness/traces",
+) -> None:
+    tracer.emit(ObservableEvent(
+        event_type="evaluation_end",
+        component="cli",
+        timestamp=datetime.now(timezone.utc),
+        data={
+            "evaluation_id": evaluation_id,
+            "duration_ms": duration_ms,
+            "passed": passed,
+            "total": total,
+        },
+        duration_ms=duration_ms,
+    ))
+    flushed = tracer.flush(traces_dir)
+    if flushed:
+        logger.debug("Traces written to %s", flushed)
+    tracer.clear_context()
 
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ AI Evaluation Harness aims to provide:
 
 ## Current Status
 
-Project Stage: **Phase 2 Complete** — RAG Evaluation
+Project Stage: **Phase 5 Complete** — Observability & Monitoring
 
 ### MVP (Prompt Evaluation)
 
@@ -60,6 +60,24 @@ Project Stage: **Phase 2 Complete** — RAG Evaluation
 | C2 | Parallel Execution (`ThreadPoolExecutor`) | ✅ Complete |
 | C3 | Comparison Report (side-by-side metrics, tokens, latency) | ✅ Complete |
 | C4 | Cost & Latency Tracking | ✅ Complete |
+
+### Phase 4 — Agent Evaluation
+
+| # | Milestone | Status |
+|---|-----------|--------|
+| A1 | Trajectory Capture (`AgentStep`, `AgentTrajectory`) | ✅ Complete |
+| A2 | Step-Level Metrics (`StepCorrectness`) | ✅ Complete |
+| A3 | Outcome Metrics (`GoalAchievement`) | ✅ Complete |
+| A4 | Tool-Use Metrics (`ToolSelection`, `TrajectoryCoherence`) | ✅ Complete |
+
+### Phase 5 — Observability & Monitoring
+
+| # | Milestone | Status |
+|---|-----------|--------|
+| O1 | Execution Tracing (`TraceObserver`) — captures evaluation events with timing, persists to NdJSON | ✅ Complete |
+| O2 | Metric Time Series (`TimeSeriesStore`) — appends metric results with timestamps for trend analysis | ✅ Complete |
+| O3 | Alert Rules (`AlertEngine`) — threshold-based alerting (gt/lt/gte/lte/eq) with default rules | ✅ Complete |
+| O4 | Dashboard Templates (`DashboardGenerator`) — generates static HTML dashboards with summary cards, alerts, metric history, trends | ✅ Complete |
 
 The full evaluation pipeline works end-to-end: **load dataset → execute prompts → evaluate metrics → generate report**.
 
@@ -148,9 +166,18 @@ src/harness/
 │   ├── metric.py         # Metric (ABC)
 │   ├── reporter.py       # Reporter (ABC)
 │   └── observer.py       # Observer (ABC)
-└── loaders/              # Concrete dataset loaders
-    ├── __init__.py
-    └── json_loader.py    # JSONDatasetLoader
+├── loaders/              # Concrete dataset loaders
+│   ├── __init__.py
+│   └── json_loader.py    # JSONDatasetLoader
+├── observers/            # Concrete Observer implementations
+│   ├── __init__.py
+│   └── trace_observer.py # TraceObserver — trace capture + NdJSON persistence
+├── observability/        # Monitoring & alerting
+│   ├── __init__.py
+│   ├── models.py         # MetricSnapshot, AlertRule, AlertResult
+│   ├── store.py          # TimeSeriesStore — NdJSON metric history
+│   ├── alerts.py         # AlertEngine — threshold-based alerting
+│   └── dashboard.py      # DashboardGenerator — HTML dashboard
 ```
 
 ## Python Conventions
@@ -161,6 +188,32 @@ src/harness/
 - **Dataset preparation scripts** go under `scripts/`
 - **Tests** go under `tests/`
 - Use `requirements.txt` for pinned dependencies (add as you go)
+
+## CLI Usage
+
+### Evaluation Commands
+
+```powershell
+harness eval -d dataset.json -m phi3 --metrics exact_match contains
+harness rag-eval -d rag_dataset.json -m phi3 --metrics faithfulness answer_relevancy
+harness agent-eval -d agent_dataset.json -m phi3 --metrics step_correctness goal_achievement
+harness compare -d dataset.json --models phi3 llama3.2 --metrics exact_match
+```
+
+### Observability Commands (Phase 5)
+
+```powershell
+# Show latest evaluation status from time series history
+harness monitor status
+
+# Evaluate alert rules against historical metric snapshots
+harness monitor alerts
+
+# Generate an HTML observability dashboard
+harness monitor dashboard -o dashboard.html
+```
+
+Traces and time series data are automatically recorded during `eval`, `rag-eval`, and `agent-eval` runs into `.harness/traces/` and `.harness/timeseries.ndjson`.
 
 ## Running Tests
 

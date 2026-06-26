@@ -39,6 +39,12 @@ Generates evaluation reports and quality dashboards.
 
 Collects execution traces, metrics, logs, and diagnostic information.
 
+Components:
+- **`TraceObserver`** — Concrete Observer implementation that captures `ObservableEvent`s in memory, groups them by trace, and persists to NdJSON files. Integral with the existing `Observer` interface.
+- **`TimeSeriesStore`** — Append-only NdJSON store that records `MetricSnapshot` entries with timestamps, evaluation IDs, and configuration context for trend analysis.
+- **`AlertEngine`** — Evaluates threshold-based `AlertRule` definitions (operators: gt/lt/gte/lte/eq) against historical snapshots, producing `AlertResult` objects for triggered rules.
+- **`DashboardGenerator`** — Generates a self-contained HTML dashboard page with summary cards, alert table, metric history table, and trend indicators.
+
 ## Package Structure
 
 ```
@@ -117,6 +123,15 @@ src/harness/
 │   ├── __init__.py
 │   ├── ollama.py            # OllamaProvider — HTTP client for local Ollama
 │   └── context.py           # DatasetContextProvider — context from dataset entries
+├── observers/               # Concrete Observer implementations
+│   ├── __init__.py
+│   └── trace_observer.py    # TraceObserver — in-memory trace collection + NdJSON persistence
+├── observability/            # Monitoring & observability tooling
+│   ├── __init__.py
+│   ├── models.py            # MetricSnapshot, TimeSeriesData, AlertRule, AlertResult, DashboardConfig
+│   ├── store.py             # TimeSeriesStore — NdJSON append store for metric snapshots
+│   ├── alerts.py            # AlertEngine — threshold-based alert rule evaluation
+│   └── dashboard.py         # DashboardGenerator — static HTML dashboard generation
 └── reporters/               # Concrete report generators
     ├── __init__.py
     └── json_reporter.py     # JSONReporter — writes EvaluationSummary to JSON

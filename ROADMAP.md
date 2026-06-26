@@ -8,7 +8,7 @@
 | Phase 2 | RAG Evaluation (DeepEval) | Phase 2 — Execution Setup | ✅ Complete |
 | Phase 3 | Multi-Model Comparison | Phase 2 — Execution Setup | ✅ Complete |
 | Phase 4 | Agent Evaluation | Phase 2 — Execution Setup | ✅ Complete |
-| Phase 5 | Observability & Monitoring | Phase 3 — Monitoring & Operations | Planned |
+| Phase 5 | Observability & Monitoring | Phase 3 — Monitoring & Operations | ✅ Complete |
 
 ---
 
@@ -96,9 +96,15 @@ Goal: Provide continuous monitoring and alerting for evaluation results.
 
 ### Milestones
 
-| # | Milestone | Description |
-|---|-----------|-------------|
-| O1 | Execution Tracing | Capture full evaluation traces with timing data |
-| O2 | Metric Time Series | Store metric results with timestamps for trend analysis |
-| O3 | Alert Rules | Define threshold-based alerting for metric regressions |
-| O4 | Dashboard Templates | Pre-built dashboards for evaluation health |
+| # | Milestone | Description | Status |
+|---|-----------|-------------|--------|
+| O1 | Execution Tracing | `TraceObserver` — concrete Observer impl that captures evaluation traces in memory and persists to NdJSON | ✅ Complete |
+| O2 | Metric Time Series | `TimeSeriesStore` — append-only NdJSON store that records metric snapshots with timestamps for trend analysis | ✅ Complete |
+| O3 | Alert Rules | `AlertEngine` — threshold-based alerting (gt/lt/gte/lte/eq) with default rules for pass rate, score, and tool selection | ✅ Complete |
+| O4 | Dashboard Templates | `DashboardGenerator` — static HTML dashboard with summary cards, alert table, metric history, and trend indicators | ✅ Complete |
+
+### Dependencies
+
+- Observer interface must be implemented concretely
+- Time series data store for metric persistence
+- CLI must expose monitoring commands
