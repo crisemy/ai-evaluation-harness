@@ -17,3 +17,7 @@ As a result, organizations often lack reliable mechanisms to:
 AI Evaluation Harness exists to address these challenges by providing a structured and repeatable evaluation framework for AI-powered systems.
 
 The project is designed for QA Engineers, AI Engineers, Reliability Engineers, Software Engineers, and engineering teams building AI-driven products.
+
+## Dataset Pipeline
+
+The project uses real-world datasets sourced from Kaggle for evaluation credibility. The current dataset is the [Question-Answer Dataset](https://www.kaggle.com/datasets/veeralakrishna/questionanswer-dataset) with 1,456 entries spanning multiple Wikipedia articles. A transformation script (`scripts/prepare_kaggle_dataset.py`) downloads and converts raw data into the project's standardized JSON schema.

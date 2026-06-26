@@ -29,6 +29,8 @@ Whenever a significant change is introduced:
 * Update ROADMAP.md if project priorities change.
 * Register a decision in DECISIONS.md when appropriate.
 
+When finishing a **Phase** or **Milestone** (as defined in ROADMAP.md), ALL of the above documents must be reviewed and updated before moving to the next phase/milestone.
+
 ## Coding Guidelines
 
 * Prioritize readability.

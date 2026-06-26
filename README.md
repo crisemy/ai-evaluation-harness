@@ -28,9 +28,12 @@ AI Evaluation Harness aims to provide:
 
 ## Current Status
 
-Project Stage: MVP — Phase 1 (Contracts & Interfaces) Complete
+Project Stage: MVP — Milestone 1 (Dataset Loader) Complete
 
-The data contracts and abstract interfaces have been implemented. The project is now ready for concrete component implementation (Dataset Loader, LLM Executor, Evaluation Engine, Reporter).
+- **Phase 1** (Contracts & Interfaces) — Complete. Data contracts and ABCs defined.
+- **M1** (Dataset Loader) — Complete. `JSONDatasetLoader` validates and loads datasets.
+- **Dataset** — Kaggle QA dataset with 1,456 entries transformed into the project's JSON schema.
+- **Next:** M2 — Provider Interface with Ollama implementation.
 
 ## Target Audience
 
@@ -104,18 +107,22 @@ deactivate
 ```
 src/harness/
 ├── __init__.py
-├── contracts/         # Data contracts (dataclasses)
-│   ├── dataset.py     # Dataset, DatasetEntry, DatasetMetadata
-│   ├── execution.py   # ExecutionRequest, ExecutionResponse, TokenUsage
-│   ├── evaluation.py  # MetricResult, EvaluationResult
-│   ├── report.py      # EvaluationSummary, Report, SummaryStats
-│   └── trace.py       # ObservableEvent, Trace
-└── interfaces/        # Abstract base classes
-    ├── dataset_loader.py  # DatasetLoader (ABC)
-    ├── provider.py        # LLMProvider (ABC)
-    ├── metric.py          # Metric (ABC)
-    ├── reporter.py        # Reporter (ABC)
-    └── observer.py        # Observer (ABC)
+├── errors.py             # Shared error types
+├── contracts/            # Data contracts (dataclasses)
+│   ├── dataset.py        # Dataset, DatasetEntry, DatasetMetadata, Difficulty
+│   ├── execution.py      # ExecutionRequest, ExecutionResponse, TokenUsage, StreamChunk
+│   ├── evaluation.py     # MetricResult, EvaluationResult, EvaluationSummary
+│   ├── report.py         # Report, SummaryStats
+│   └── trace.py          # ObservableEvent, Trace
+├── interfaces/           # Abstract base classes
+│   ├── dataset_loader.py # DatasetLoader (ABC)
+│   ├── provider.py       # LLMProvider (ABC)
+│   ├── metric.py         # Metric (ABC)
+│   ├── reporter.py       # Reporter (ABC)
+│   └── observer.py       # Observer (ABC)
+└── loaders/              # Concrete dataset loaders
+    ├── __init__.py
+    └── json_loader.py    # JSONDatasetLoader
 ```
 
 ## Python Conventions

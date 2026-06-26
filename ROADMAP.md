@@ -20,7 +20,7 @@ Goal: Establish the core evaluation pipeline for LLM prompt-response evaluation.
 
 | # | Milestone | Description |
 |---|-----------|-------------|
-| M1 | Dataset Loader | Load evaluation datasets from files (JSON, CSV, YAML) |
+| M1 | Dataset Loader | Load evaluation datasets from files (JSON, CSV, YAML) | ✅ Complete |
 | M2 | Provider Interface | Abstract provider contract with first implementation (Ollama) |
 | M3 | Prompt Executor | Execute prompts against providers, collect responses |
 | M4 | Evaluation Engine | Apply metrics to collected responses |
