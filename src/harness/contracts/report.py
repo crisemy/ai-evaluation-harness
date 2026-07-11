@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from harness.contracts.evaluation import EvaluationResult
+from harness.contracts.risk import RiskAssessment
 
 
 @dataclass
@@ -53,6 +54,8 @@ class EvaluationSummary:
     environment: EnvironmentInfo
     summary: SummaryStats
     results: list[EvaluationResult]
+    risk_assessment: RiskAssessment | None = None
+    max_severity: int = 1
 
 
 @dataclass

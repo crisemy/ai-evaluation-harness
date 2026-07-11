@@ -9,6 +9,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from harness.comparison import CompareConfig, ComparisonEngine, ModelSpec
+from harness.contracts.risk import (
+    ChangeType,
+    HistoricalStability,
+    RiskProfile,
+    SafetyRelevance,
+)
 from harness.contracts.trace import ObservableEvent
 from harness.errors import HarnessError
 from harness.evaluator import EvalSample, EvaluationConfigInput, EvaluationEngine
@@ -59,6 +65,12 @@ def build_parser() -> argparse.ArgumentParser:
     eval_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
     eval_.add_argument("--max-tokens", type=int, default=256, help="Max tokens per response")
     eval_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
+    eval_.add_argument("--change-type", choices=[t.value for t in ChangeType],
+                       default=None, help="CORE risk change type for risk-based evaluation")
+    eval_.add_argument("--safety-relevance", choices=[s.value for s in SafetyRelevance],
+                       default=None, help="Safety relevance level for risk scoring")
+    eval_.add_argument("--historical-stability", choices=[h.value for h in HistoricalStability],
+                       default=None, help="Historical stability for risk multiplier")
     eval_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
     rag_ = sub.add_parser("rag-eval", help="Run a RAG evaluation with context documents")
@@ -207,12 +219,21 @@ def _run_eval(args: argparse.Namespace) -> int:
                 resp.latency_ms,
             )
 
+        risk_profile: RiskProfile | None = None
+        if args.change_type:
+            risk_profile = RiskProfile(
+                change_type=ChangeType(args.change_type),
+                safety_relevance=SafetyRelevance(args.safety_relevance or "non_safety"),
+                historical_stability=HistoricalStability(args.historical_stability or "normal"),
+            )
+
         eval_config = EvaluationConfigInput(
             dataset_path=str(dataset_path),
             dataset_format="json",
             provider=args.provider,
             model=args.model,
             metrics=args.metrics,
+            risk_profile=risk_profile,
         )
         engine = EvaluationEngine(metrics, eval_config)
         summary = engine.evaluate(responses)
@@ -231,6 +252,10 @@ def _run_eval(args: argparse.Namespace) -> int:
         logger.info("  Passed:  %d", summary.summary.passed)
         logger.info("  Failed:  %d", summary.summary.failed)
         logger.info("  Rate:    %.1f%%", summary.summary.pass_rate * 100)
+        if summary.risk_assessment:
+            ra = summary.risk_assessment
+            logger.info("  Risk:    %s (score=%.1f, gate=%s)", ra.level.value, ra.score, ra.gate)
+            logger.info("  Severity: %d (max failure severity)", summary.max_severity)
         logger.info("  Report:  %s", out_path)
 
         return 0

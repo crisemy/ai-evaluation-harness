@@ -6,26 +6,47 @@ from harness.contracts.execution import (
     TokenUsage,
     StreamChunk,
 )
-from harness.contracts.evaluation import MetricResult, EvaluationResult
+from harness.contracts.evaluation import (
+    EvaluationResult,
+    FailureCode,
+    MetricResult,
+)
 from harness.contracts.report import EvaluationSummary, Report, ReportMetadata
+from harness.contracts.risk import (
+    ChangeType,
+    HistoricalStability,
+    RiskAssessment,
+    RiskLevel,
+    RiskProfile,
+    RiskRecord,
+    SafetyRelevance,
+)
 from harness.contracts.trace import ObservableEvent, Trace
 
 __all__ = [
     "AgentStep",
     "AgentTrajectory",
     "AgentEvaluationInput",
+    "ChangeType",
     "Dataset",
     "DatasetEntry",
     "DatasetMetadata",
-    "ExecutionRequest",
-    "ExecutionResponse",
-    "TokenUsage",
-    "StreamChunk",
-    "MetricResult",
     "EvaluationResult",
     "EvaluationSummary",
+    "ExecutionRequest",
+    "ExecutionResponse",
+    "FailureCode",
+    "HistoricalStability",
+    "MetricResult",
+    "ObservableEvent",
     "Report",
     "ReportMetadata",
-    "ObservableEvent",
+    "RiskAssessment",
+    "RiskLevel",
+    "RiskProfile",
+    "RiskRecord",
+    "SafetyRelevance",
+    "StreamChunk",
+    "TokenUsage",
     "Trace",
 ]
