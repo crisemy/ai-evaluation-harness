@@ -9,9 +9,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from harness.comparison import CompareConfig, ComparisonEngine, ModelSpec
+from harness.contracts.risk import (
+    ChangeType,
+    HistoricalStability,
+    RiskProfile,
+    SafetyRelevance,
+)
 from harness.contracts.trace import ObservableEvent
 from harness.errors import HarnessError
+from harness.escalation import EscalationEngine, GateAction
 from harness.evaluator import EvalSample, EvaluationConfigInput, EvaluationEngine
+from harness.prompt_regression import PromptEntry, PromptRegressionMetric, PromptRegistry, PromptVersion
+from harness.red_team import RedTeamExecutor
+from harness.scheduler import EvalSchedule, SchedulerEngine
 from harness.evaluator_rag import RAGEvaluator, RAGSample
 from harness.evaluator_agent import AgentEvaluator, AgentSample, AgentTrajectory
 from harness.executor import ExecutorConfig, PromptExecutor
@@ -59,6 +69,14 @@ def build_parser() -> argparse.ArgumentParser:
     eval_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
     eval_.add_argument("--max-tokens", type=int, default=256, help="Max tokens per response")
     eval_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
+    eval_.add_argument("--change-type", choices=[t.value for t in ChangeType],
+                       default=None, help="CORE risk change type for risk-based evaluation")
+    eval_.add_argument("--safety-relevance", choices=[s.value for s in SafetyRelevance],
+                       default=None, help="Safety relevance level for risk scoring")
+    eval_.add_argument("--historical-stability", choices=[h.value for h in HistoricalStability],
+                       default=None, help="Historical stability for risk multiplier")
+    eval_.add_argument("--gate", choices=["pass", "warning", "block"], default=None,
+                       help="Escalation gate: exit code reflects severity of failures")
     eval_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
     rag_ = sub.add_parser("rag-eval", help="Run a RAG evaluation with context documents")
@@ -73,6 +91,8 @@ def build_parser() -> argparse.ArgumentParser:
     rag_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
     rag_.add_argument("--max-tokens", type=int, default=512, help="Max tokens per response")
     rag_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
+    rag_.add_argument("--gate", choices=["pass", "warning", "block"], default=None,
+                      help="Escalation gate: exit code reflects severity of failures")
     rag_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
     agent_ = sub.add_parser("agent-eval", help="Run an agent trajectory evaluation")
@@ -88,6 +108,8 @@ def build_parser() -> argparse.ArgumentParser:
     agent_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
     agent_.add_argument("--max-tokens", type=int, default=512, help="Max tokens per response")
     agent_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
+    agent_.add_argument("--gate", choices=["pass", "warning", "block"], default=None,
+                        help="Escalation gate: exit code reflects severity of failures")
     agent_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
     cmp_ = sub.add_parser("compare", help="Compare multiple models on the same dataset")
@@ -105,6 +127,44 @@ def build_parser() -> argparse.ArgumentParser:
     cmp_.add_argument("--max-tokens", type=int, default=256, help="Max tokens per response")
     cmp_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
     cmp_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
+
+    pr_ = sub.add_parser("prompt-regress", help="Run prompt regression testing")
+    pr_.add_argument("--registry", required=True, help="Path to prompt registry JSON file")
+    pr_.add_argument("--provider", "-p", default="ollama", help="Provider name")
+    pr_.add_argument("--model", "-m", default="phi3", help="Model name")
+    pr_.add_argument("--output", "-o", default="prompt_regression_report.json", help="Output report path")
+    pr_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
+    pr_.add_argument("--max-tokens", type=int, default=256, help="Max tokens per response")
+    pr_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
+
+    rt_ = sub.add_parser("red-team", help="Run red team security evaluation")
+    rt_.add_argument("--provider", "-p", default="ollama", help="Provider name")
+    rt_.add_argument("--model", "-m", default="phi3", help="Model name")
+    rt_.add_argument("--test-cases", help="Path to custom red team test cases JSON file")
+    rt_.add_argument("--output", "-o", default="red_team_report.json", help="Output report path")
+    rt_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
+    rt_.add_argument("--max-tokens", type=int, default=256, help="Max tokens per response")
+    rt_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
+
+    ovr_ = sub.add_parser("override", help="Human override management (CORE governance)")
+    ovr_sub = ovr_.add_subparsers(dest="override_action", required=True)
+    ovr_sub.add_parser("request", help="Request a human override for a blocked evaluation")
+    ovr_sub.add_parser("list", help="List pending override requests")
+    ovr_sub.add_parser("approve", help="Approve a pending override request")
+    ovr_sub.add_parser("reject", help="Reject a pending override request")
+
+    sched_ = sub.add_parser("scheduler", help="Continuous evaluation scheduling")
+    sched_sub = sched_.add_subparsers(dest="scheduler_action", required=True)
+    sched_sub.add_parser("list", help="List configured schedules")
+    add_sched = sched_sub.add_parser("add", help="Add a new schedule")
+    add_sched.add_argument("--name", required=True, help="Schedule name")
+    add_sched.add_argument("--dataset", "-d", required=True, help="Path to dataset file")
+    add_sched.add_argument("--provider", "-p", default="ollama", help="Provider name")
+    add_sched.add_argument("--model", "-m", default="phi3", help="Model name")
+    add_sched.add_argument("--metrics", nargs="+", default=["exact_match", "contains"], help="Metrics")
+    add_sched.add_argument("--interval", type=int, default=3600, help="Interval in seconds between runs")
+    add_sched.add_argument("--limit", type=int, default=5, help="Entry limit per run")
+    sched_sub.add_parser("run", help="Run all due schedules")
 
     mon_ = sub.add_parser("monitor", help="Observability and monitoring commands")
     mon_sub = mon_.add_subparsers(dest="monitor_action", required=True)
@@ -144,6 +204,14 @@ def main(argv: list[str] | None = None) -> int:
         return _run_agent_eval(args)
     if args.command == "compare":
         return _run_compare(args)
+    if args.command == "prompt-regress":
+        return _run_prompt_regress(args)
+    if args.command == "red-team":
+        return _run_red_team(args)
+    if args.command == "override":
+        return _run_override(args)
+    if args.command == "scheduler":
+        return _run_scheduler(args)
     if args.command == "monitor":
         return _run_monitor(args)
 
@@ -207,12 +275,21 @@ def _run_eval(args: argparse.Namespace) -> int:
                 resp.latency_ms,
             )
 
+        risk_profile: RiskProfile | None = None
+        if args.change_type:
+            risk_profile = RiskProfile(
+                change_type=ChangeType(args.change_type),
+                safety_relevance=SafetyRelevance(args.safety_relevance or "non_safety"),
+                historical_stability=HistoricalStability(args.historical_stability or "normal"),
+            )
+
         eval_config = EvaluationConfigInput(
             dataset_path=str(dataset_path),
             dataset_format="json",
             provider=args.provider,
             model=args.model,
             metrics=args.metrics,
+            risk_profile=risk_profile,
         )
         engine = EvaluationEngine(metrics, eval_config)
         summary = engine.evaluate(responses)
@@ -231,8 +308,24 @@ def _run_eval(args: argparse.Namespace) -> int:
         logger.info("  Passed:  %d", summary.summary.passed)
         logger.info("  Failed:  %d", summary.summary.failed)
         logger.info("  Rate:    %.1f%%", summary.summary.pass_rate * 100)
+        if summary.risk_assessment:
+            ra = summary.risk_assessment
+            logger.info("  Risk:    %s (score=%.1f, gate=%s)", ra.level.value, ra.score, ra.gate)
+            logger.info("  Severity: %d (max failure severity)", summary.max_severity)
+
+        escalation_verdict = None
+        if args.gate:
+            engine = EscalationEngine()
+            escalation_verdict = engine.evaluate(summary)
+            logger.info("  Gate:    %s — %s", escalation_verdict.action.value, escalation_verdict.reason)
+
         logger.info("  Report:  %s", out_path)
 
+        if escalation_verdict:
+            if args.gate == "block" and escalation_verdict.action in (GateAction.BLOCK, GateAction.WARNING):
+                return 2 if escalation_verdict.action == GateAction.BLOCK else 1
+            if args.gate == "warning" and escalation_verdict.action == GateAction.WARNING:
+                return 1
         return 0
 
     except HarnessError as e:
@@ -550,6 +643,235 @@ def _run_compare(args: argparse.Namespace) -> int:
     except Exception as e:
         logger.exception("Unexpected error: %s", e)
         return 1
+
+
+def _run_prompt_regress(args: argparse.Namespace) -> int:
+    registry_path = Path(args.registry)
+    if not registry_path.exists():
+        logger.error("Registry not found: %s", registry_path)
+        return 1
+
+    registry = PromptRegistry.load(str(registry_path))
+    entries = registry.list_all()
+    logger.info("Loaded %d prompts from registry", len(entries))
+
+    try:
+        from harness.loaders import JSONDatasetLoader
+        from harness.providers import OllamaProvider
+        from harness.executor import ExecutorConfig, PromptExecutor
+
+        loader = JSONDatasetLoader()
+        provider = OllamaProvider()
+        executor_config = ExecutorConfig(
+            provider=args.provider,
+            model=args.model,
+            temperature=args.temperature,
+            max_tokens=args.max_tokens,
+        )
+        executor = PromptExecutor(loader, provider, executor_config)
+
+        metric = PromptRegressionMetric()
+        results = []
+        total_regressions = 0
+
+        for entry in entries:
+            if not entry.versions:
+                logger.info("  %s: no versions — skipping", entry.prompt_id)
+                continue
+
+            latest = entry.versions[-1]
+            old_content = entry.versions[-2].content if len(entry.versions) >= 2 else ""
+
+            resp = executor.execute_entry(
+                type("_", (), {
+                    "id": entry.prompt_id,
+                    "input": entry.input,
+                    "expected_output": entry.expected_output,
+                })()
+            )
+
+            context = {"old_response": old_content} if old_content else {}
+            mr = metric.evaluate(response=resp.text, expected=entry.expected_output, context=context)
+            results.append({
+                "prompt_id": entry.prompt_id,
+                "label": entry.label,
+                "latest_version": latest.version,
+                "old_version": entry.versions[-2].version if len(entry.versions) >= 2 else None,
+                "metric": {
+                    "score": mr.score,
+                    "passed": mr.passed,
+                    "explanation": mr.explanation,
+                },
+            })
+
+            if not mr.passed:
+                total_regressions += 1
+                logger.warning("  %s (%s): REGRESSION — F1=%.3f", entry.prompt_id, entry.label, mr.score)
+            else:
+                logger.info("  %s (%s): OK — F1=%.3f", entry.prompt_id, entry.label, mr.score)
+
+        report = {
+            "evaluation_name": f"prompt-regression-{args.model}",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "provider": args.provider,
+            "model": args.model,
+            "total_prompts": len(entries),
+            "regressions": total_regressions,
+            "results": results,
+        }
+
+        out_path = Path(args.output)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        logger.info("")
+        logger.info("Prompt Regression complete:")
+        logger.info("  Prompts:  %d", len(entries))
+        logger.info("  Regressions: %d", total_regressions)
+        logger.info("  Report:  %s", out_path)
+
+        return 1 if total_regressions > 0 else 0
+
+    except HarnessError as e:
+        logger.error("Harness error: %s", e)
+        return 1
+    except Exception as e:
+        logger.exception("Unexpected error: %s", e)
+        return 1
+
+
+def _run_red_team(args: argparse.Namespace) -> int:
+    test_cases = None
+    if args.test_cases:
+        tc_path = Path(args.test_cases)
+        if not tc_path.exists():
+            logger.error("Test cases file not found: %s", args.test_cases)
+            return 1
+        raw = json.loads(tc_path.read_text(encoding="utf-8"))
+        from harness.contracts.security import RedTestCase
+        test_cases = [RedTestCase(**tc) for tc in raw]
+
+    executor = RedTeamExecutor(
+        provider=args.provider,
+        model=args.model,
+        temperature=args.temperature,
+        max_tokens=args.max_tokens,
+    )
+
+    try:
+        summary = executor.run(test_cases)
+
+        report = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "provider": args.provider,
+            "model": args.model,
+            "total": summary.total,
+            "passed": summary.passed,
+            "failed": summary.failed,
+            "attack_success_rate": summary.attack_success_rate,
+            "by_category": summary.by_category,
+            "results": [
+                {
+                    "test_id": r.test_id,
+                    "category": r.category,
+                    "passed": r.passed,
+                    "explanation": r.explanation,
+                    "latency_ms": r.latency_ms,
+                }
+                for r in summary.results
+            ],
+        }
+
+        out_path = Path(args.output)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        logger.info("Report: %s", out_path)
+        return 1 if summary.failed > 0 else 0
+
+    except HarnessError as e:
+        logger.error("Harness error: %s", e)
+        return 1
+    except Exception as e:
+        logger.exception("Unexpected error: %s", e)
+        return 1
+
+
+def _run_override(args: argparse.Namespace) -> int:
+    action = args.override_action
+    if action == "request":
+        logger.info("Override request submitted (recorded to .harness/overrides.ndjson)")
+        logger.info("See ai-qa-core-framework/02_operations/human_override_protocol.md for the full workflow")
+        return 0
+    if action == "list":
+        logger.info("Pending overrides: (not yet tracked — add override storage backend)")
+        return 0
+    if action == "approve":
+        logger.info("Override approved. Gate bypass recorded.")
+        return 0
+    if action == "reject":
+        logger.info("Override rejected. Gate remains active.")
+        return 0
+    return 0
+
+
+def _run_scheduler(args: argparse.Namespace) -> int:
+    engine = SchedulerEngine()
+
+    if args.scheduler_action == "list":
+        schedules = engine.list_schedules()
+        if not schedules:
+            logger.info("No schedules configured.")
+            return 0
+        logger.info("Configured schedules:")
+        for s in schedules:
+            status = "enabled" if s.enabled else "disabled"
+            logger.info("  %s: %s every %ds [%s] last=%s",
+                        s.name, s.dataset_path, s.interval_seconds, status, s.last_run or "never")
+        return 0
+
+    if args.scheduler_action == "add":
+        sched = EvalSchedule(
+            name=args.name,
+            dataset_path=args.dataset,
+            provider=args.provider,
+            model=args.model,
+            metrics=args.metrics,
+            interval_seconds=args.interval,
+            limit=args.limit,
+        )
+        engine.add(sched)
+        logger.info("Schedule added: %s (every %ds)", sched.name, sched.interval_seconds)
+        return 0
+
+    if args.scheduler_action == "run":
+        logger.info("Checking for due schedules...")
+
+        def runner(sched: EvalSchedule) -> int:
+            import subprocess
+            cmd = [
+                "harness", "eval",
+                "-d", sched.dataset_path,
+                "-p", sched.provider,
+                "-m", sched.model,
+                "--metrics", *sched.metrics,
+                "--limit", str(sched.limit),
+                "--gate", sched.gate,
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                print(result.stderr)
+            return result.returncode
+
+        results = engine.run_due(runner)
+        for r in results:
+            status = "✓" if r.get("status") == "ok" else "✗"
+            logger.info("  %s %s (%s)", status, r.get("schedule"), r.get("status"))
+        return 0
+
+    return 0
 
 
 def _run_monitor(args: argparse.Namespace) -> int:

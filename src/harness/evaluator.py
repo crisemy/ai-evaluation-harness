@@ -17,8 +17,16 @@ from harness.contracts.report import (
     MetricSummary,
     SummaryStats,
 )
+from harness.contracts.risk import (
+    ChangeType,
+    HistoricalStability,
+    RiskAssessment,
+    RiskProfile,
+    SafetyRelevance,
+)
 from harness.errors import HarnessError
 from harness.interfaces.metric import Metric
+from harness.risk import RiskClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +44,7 @@ class EvaluationConfigInput:
     provider: str = "ollama"
     model: str = "phi3"
     metrics: list[str] = field(default_factory=lambda: ["exact_match", "contains"])
+    risk_profile: RiskProfile | None = None
 
 
 class EvaluationEngine:
@@ -44,6 +53,7 @@ class EvaluationEngine:
             raise HarnessError("At least one metric is required")
         self._metrics = metrics
         self._config = config or EvaluationConfigInput()
+        self._risk_classifier = RiskClassifier()
 
     @property
     def metric_names(self) -> list[str]:
@@ -56,9 +66,14 @@ class EvaluationEngine:
         evaluation_id = uuid.uuid4().hex[:12]
         start = time.monotonic()
 
+        risk_assessment: RiskAssessment | None = None
+        if self._config.risk_profile:
+            risk_assessment = self._risk_classifier.classify(self._config.risk_profile)
+            logger.info("Risk assessment: %s", risk_assessment.rationale)
+
         results: list[EvaluationResult] = []
         for sample in samples:
-            result = self._evaluate_entry(sample)
+            result = self._evaluate_entry(sample, risk_assessment)
             results.append(result)
 
         elapsed_ms = int((time.monotonic() - start) * 1000)
@@ -80,6 +95,7 @@ class EvaluationEngine:
 
         total = len(results)
         passed = sum(1 for r in results if r.overall_passed)
+        max_severity = max((r.max_severity for r in results), default=1)
         avg_score = (
             sum(r.overall_score for r in results) / total if total else 0.0
         )
@@ -117,9 +133,11 @@ class EvaluationEngine:
             environment=env,
             summary=summary_stats,
             results=results,
+            risk_assessment=risk_assessment,
+            max_severity=max_severity,
         )
 
-    def _evaluate_entry(self, sample: EvalSample) -> EvaluationResult:
+    def _evaluate_entry(self, sample: EvalSample, risk_assessment: RiskAssessment | None = None) -> EvaluationResult:
         entry_start = time.monotonic()
         metric_results: list[MetricResult] = []
 
@@ -148,6 +166,7 @@ class EvaluationEngine:
         scores = [m.score for m in metric_results]
         overall_score = sum(scores) / len(scores) if scores else 0.0
         overall_passed = all(m.passed for m in metric_results)
+        max_severity = max((m.severity for m in metric_results), default=1)
 
         return EvaluationResult(
             entry_id=sample.response.entry_id,
@@ -156,4 +175,6 @@ class EvaluationEngine:
             overall_passed=overall_passed,
             duration_ms=elapsed_ms,
             timestamp=datetime.now(timezone.utc),
+            risk_assessment=risk_assessment,
+            max_severity=max_severity,
         )
