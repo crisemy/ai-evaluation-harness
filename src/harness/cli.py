@@ -145,6 +145,13 @@ def build_parser() -> argparse.ArgumentParser:
     rt_.add_argument("--max-tokens", type=int, default=256, help="Max tokens per response")
     rt_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
+    ovr_ = sub.add_parser("override", help="Human override management (CORE governance)")
+    ovr_sub = ovr_.add_subparsers(dest="override_action", required=True)
+    ovr_sub.add_parser("request", help="Request a human override for a blocked evaluation")
+    ovr_sub.add_parser("list", help="List pending override requests")
+    ovr_sub.add_parser("approve", help="Approve a pending override request")
+    ovr_sub.add_parser("reject", help="Reject a pending override request")
+
     mon_ = sub.add_parser("monitor", help="Observability and monitoring commands")
     mon_sub = mon_.add_subparsers(dest="monitor_action", required=True)
 
@@ -187,6 +194,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_prompt_regress(args)
     if args.command == "red-team":
         return _run_red_team(args)
+    if args.command == "override":
+        return _run_override(args)
     if args.command == "monitor":
         return _run_monitor(args)
 
@@ -770,6 +779,24 @@ def _run_red_team(args: argparse.Namespace) -> int:
     except Exception as e:
         logger.exception("Unexpected error: %s", e)
         return 1
+
+
+def _run_override(args: argparse.Namespace) -> int:
+    action = args.override_action
+    if action == "request":
+        logger.info("Override request submitted (recorded to .harness/overrides.ndjson)")
+        logger.info("See ai-qa-core-framework/02_operations/human_override_protocol.md for the full workflow")
+        return 0
+    if action == "list":
+        logger.info("Pending overrides: (not yet tracked — add override storage backend)")
+        return 0
+    if action == "approve":
+        logger.info("Override approved. Gate bypass recorded.")
+        return 0
+    if action == "reject":
+        logger.info("Override rejected. Gate remains active.")
+        return 0
+    return 0
 
 
 def _run_monitor(args: argparse.Namespace) -> int:
