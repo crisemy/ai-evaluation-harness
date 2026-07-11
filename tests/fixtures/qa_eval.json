@@ -1,0 +1,30 @@
+{
+  "format_version": "1.0",
+  "dataset": {
+    "name": "CI Smoke Test — Standard Eval",
+    "description": "Minimal dataset for CI pipeline smoke testing",
+    "entries": [
+      {
+        "id": "ci-001",
+        "input": "What is the capital of France?",
+        "expected_output": "Paris",
+        "category": "geography",
+        "difficulty": "easy"
+      },
+      {
+        "id": "ci-002",
+        "input": "What is 2 + 2?",
+        "expected_output": "4",
+        "category": "math",
+        "difficulty": "easy"
+      },
+      {
+        "id": "ci-003",
+        "input": "Who wrote Romeo and Juliet?",
+        "expected_output": "Shakespeare",
+        "category": "literature",
+        "difficulty": "easy"
+      }
+    ]
+  }
+}

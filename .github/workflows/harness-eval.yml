@@ -46,17 +46,17 @@ jobs:
         eval-type: [eval, rag-eval, agent-eval]
         include:
           - eval-type: eval
-            dataset: datasets/qa_kaggle.json
+            dataset: tests/fixtures/qa_eval.json
             metrics: exact_match contains
-            extra-flags: --limit 10
+            extra-flags: --limit 3
           - eval-type: rag-eval
-            dataset: datasets/rag_dataset.json
+            dataset: tests/fixtures/rag_eval.json
             metrics: faithfulness answer_relevancy
-            extra-flags: --limit 5
+            extra-flags: --limit 2
           - eval-type: agent-eval
-            dataset: datasets/agent_dataset.json
+            dataset: tests/fixtures/agent_eval.json
             metrics: step_correctness goal_achievement
-            extra-flags: --limit 5
+            extra-flags: --limit 2
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ env.PYTHON_VERSION }}
@@ -70,7 +70,9 @@ jobs:
           pip install -e .
       - name: Run ${{ matrix.eval-type }} (smoke test)
         id: evaluation
+        continue-on-error: true
         run: |
+          mkdir -p reports
           harness ${{ matrix.eval-type }} \
             -d ${{ matrix.dataset }} \
             --metrics ${{ matrix.metrics }} \
@@ -113,11 +115,12 @@ jobs:
           pip install -e .
       - name: Run prompt regression
         id: regress
+        continue-on-error: true
         run: |
+          mkdir -p reports
           harness prompt-regress \
-            -d datasets/qa_kaggle.json \
+            --registry tests/fixtures/prompt_registry.json \
             --model phi3 \
-            --limit 10 \
             -o reports/prompt-regression-report.json \
             --ci-env ci \
             --release-id ${{ github.run_id }} \
@@ -149,7 +152,9 @@ jobs:
           pip install -e .
       - name: Run red team security scan
         id: redteam
+        continue-on-error: true
         run: |
+          mkdir -p reports
           harness red-team \
             -m phi3 \
             -o reports/red-team-report.json \

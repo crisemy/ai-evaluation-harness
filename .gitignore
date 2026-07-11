@@ -30,3 +30,7 @@ datasets/
 
 # ai-qa-core-framework — placeholder, not populated
 ai-qa-core-framework/
+
+# Test fixtures — committed for CI smoke tests
+!tests/fixtures/
+!tests/fixtures/*.json

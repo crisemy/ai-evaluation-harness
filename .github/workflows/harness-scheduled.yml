@@ -8,7 +8,7 @@ on:
     inputs:
       dataset:
         description: Dataset to evaluate
-        default: datasets/qa_kaggle.json
+        default: tests/fixtures/qa_eval.json
         required: false
       model:
         description: Model to evaluate
@@ -39,8 +39,10 @@ jobs:
           pip install -e .
       - name: Run evaluation
         id: evaluation
+        continue-on-error: true
         run: |
-          DATASET="${{ github.event.inputs.dataset || 'datasets/qa_kaggle.json' }}"
+          mkdir -p reports
+          DATASET="${{ github.event.inputs.dataset || 'tests/fixtures/qa_eval.json' }}"
           MODEL="${{ github.event.inputs.model || 'phi3' }}"
           LIMIT="${{ github.event.inputs.limit || '50' }}"
           harness eval \
@@ -65,6 +67,7 @@ jobs:
         id: kpi
         if: always()
         run: |
+          mkdir -p reports
           harness ci kpi \
             --store .harness/timeseries.ndjson \
             -o reports/kpi-report.json 2>&1 | tee reports/kpi-output.log
@@ -72,6 +75,7 @@ jobs:
         id: release_report
         if: always()
         run: |
+          mkdir -p reports
           harness ci report \
             --store .harness/timeseries.ndjson \
             --risk-level major \

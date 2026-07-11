@@ -1,0 +1,21 @@
+[
+  {
+    "prompt_id": "prompt-ci-001",
+    "label": "Capital of France",
+    "input": "What is the capital of France?",
+    "expected_output": "Paris",
+    "versions": [
+      {"version": "1", "content": "Paris is the capital of France.", "timestamp": "2026-07-11T00:00:00Z"},
+      {"version": "2", "content": "The capital of France is Paris.", "timestamp": "2026-07-11T01:00:00Z"}
+    ]
+  },
+  {
+    "prompt_id": "prompt-ci-002",
+    "label": "Math question",
+    "input": "What is 2 + 2?",
+    "expected_output": "4",
+    "versions": [
+      {"version": "1", "content": "2 + 2 equals 4.", "timestamp": "2026-07-11T00:00:00Z"}
+    ]
+  }
+]

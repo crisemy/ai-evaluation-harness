@@ -1,0 +1,48 @@
+{
+  "format_version": "1.0",
+  "dataset": {
+    "name": "CI Smoke Test — Agent Eval",
+    "description": "Minimal agent dataset for CI pipeline smoke testing",
+    "entries": [
+      {
+        "id": "agent-ci-001",
+        "input": "Book a flight from New York to London for tomorrow",
+        "expected_output": "Flight booked successfully",
+        "category": "travel",
+        "difficulty": "medium",
+        "metadata": {
+          "trajectory": {
+            "steps": [
+              {"step_index": 0, "thought": "User wants to book a flight", "tool_name": "search_flights", "tool_input": "NYC to LHR", "tool_output": "Available flights found"},
+              {"step_index": 1, "thought": "Select best option", "tool_name": "book_flight", "tool_input": "flight-123", "tool_output": "Booking confirmed"}
+            ],
+            "final_answer": "Flight booked successfully",
+            "total_duration_ms": 1200,
+            "total_tokens": 350
+          },
+          "expected_trajectory": ["search_flights", "book_flight"],
+          "expected_tools": ["search_flights", "book_flight"]
+        }
+      },
+      {
+        "id": "agent-ci-002",
+        "input": "What is the weather in Tokyo?",
+        "expected_output": "The weather in Tokyo is sunny, 22°C",
+        "category": "weather",
+        "difficulty": "easy",
+        "metadata": {
+          "trajectory": {
+            "steps": [
+              {"step_index": 0, "thought": "User wants weather info", "tool_name": "get_weather", "tool_input": "Tokyo", "tool_output": "Sunny, 22°C"}
+            ],
+            "final_answer": "The weather in Tokyo is sunny, 22°C",
+            "total_duration_ms": 800,
+            "total_tokens": 200
+          },
+          "expected_trajectory": ["get_weather"],
+          "expected_tools": ["get_weather"]
+        }
+      }
+    ]
+  }
+}

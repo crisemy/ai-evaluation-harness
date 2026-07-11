@@ -1,0 +1,33 @@
+{
+  "format_version": "1.0",
+  "dataset": {
+    "name": "CI Smoke Test — RAG Eval",
+    "description": "Minimal RAG dataset for CI pipeline smoke testing",
+    "entries": [
+      {
+        "id": "rag-ci-001",
+        "input": "What is Python used for?",
+        "expected_output": "Python is a programming language used for web development, data science, and automation.",
+        "category": "programming",
+        "difficulty": "easy",
+        "metadata": {
+          "context_documents": [
+            {"id": "doc-1", "text": "Python is a high-level programming language. It is used for web development, data science, artificial intelligence, and automation."}
+          ]
+        }
+      },
+      {
+        "id": "rag-ci-002",
+        "input": "When was the Eiffel Tower built?",
+        "expected_output": "The Eiffel Tower was built in 1889.",
+        "category": "history",
+        "difficulty": "easy",
+        "metadata": {
+          "context_documents": [
+            {"id": "doc-1", "text": "The Eiffel Tower is a wrought-iron lattice tower on the Champ de Mars in Paris. It was constructed from 1887 to 1889 as the centerpiece of the 1889 World's Fair."}
+          ]
+        }
+      }
+    ]
+  }
+}
