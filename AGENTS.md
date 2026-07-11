@@ -43,7 +43,7 @@ harness ci report -o release-report.json      # release quality report (Go/Condi
 You MUST update the following files whenever the corresponding change occurs. This is not optional.
 
 | File | Update When | Always? |
-|------|-------------|---------|
+| ------ | ------------- | --------- |
 | **README.md** | User-facing behavior changes (CLI flags, new commands, features) | ❌ |
 | **docs/ARCHITECTURE.md** | Module relationships, package structure, or data flow changes | ❌ |
 | **docs/ROADMAP.md** | Phase status changes, milestone completion, or priority shifts | ❌ |
