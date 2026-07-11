@@ -21,6 +21,7 @@ from harness.escalation import EscalationEngine, GateAction
 from harness.evaluator import EvalSample, EvaluationConfigInput, EvaluationEngine
 from harness.prompt_regression import PromptEntry, PromptRegressionMetric, PromptRegistry, PromptVersion
 from harness.red_team import RedTeamExecutor
+from harness.scheduler import EvalSchedule, SchedulerEngine
 from harness.evaluator_rag import RAGEvaluator, RAGSample
 from harness.evaluator_agent import AgentEvaluator, AgentSample, AgentTrajectory
 from harness.executor import ExecutorConfig, PromptExecutor
@@ -152,6 +153,19 @@ def build_parser() -> argparse.ArgumentParser:
     ovr_sub.add_parser("approve", help="Approve a pending override request")
     ovr_sub.add_parser("reject", help="Reject a pending override request")
 
+    sched_ = sub.add_parser("scheduler", help="Continuous evaluation scheduling")
+    sched_sub = sched_.add_subparsers(dest="scheduler_action", required=True)
+    sched_sub.add_parser("list", help="List configured schedules")
+    add_sched = sched_sub.add_parser("add", help="Add a new schedule")
+    add_sched.add_argument("--name", required=True, help="Schedule name")
+    add_sched.add_argument("--dataset", "-d", required=True, help="Path to dataset file")
+    add_sched.add_argument("--provider", "-p", default="ollama", help="Provider name")
+    add_sched.add_argument("--model", "-m", default="phi3", help="Model name")
+    add_sched.add_argument("--metrics", nargs="+", default=["exact_match", "contains"], help="Metrics")
+    add_sched.add_argument("--interval", type=int, default=3600, help="Interval in seconds between runs")
+    add_sched.add_argument("--limit", type=int, default=5, help="Entry limit per run")
+    sched_sub.add_parser("run", help="Run all due schedules")
+
     mon_ = sub.add_parser("monitor", help="Observability and monitoring commands")
     mon_sub = mon_.add_subparsers(dest="monitor_action", required=True)
 
@@ -196,6 +210,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_red_team(args)
     if args.command == "override":
         return _run_override(args)
+    if args.command == "scheduler":
+        return _run_scheduler(args)
     if args.command == "monitor":
         return _run_monitor(args)
 
@@ -796,6 +812,65 @@ def _run_override(args: argparse.Namespace) -> int:
     if action == "reject":
         logger.info("Override rejected. Gate remains active.")
         return 0
+    return 0
+
+
+def _run_scheduler(args: argparse.Namespace) -> int:
+    engine = SchedulerEngine()
+
+    if args.scheduler_action == "list":
+        schedules = engine.list_schedules()
+        if not schedules:
+            logger.info("No schedules configured.")
+            return 0
+        logger.info("Configured schedules:")
+        for s in schedules:
+            status = "enabled" if s.enabled else "disabled"
+            logger.info("  %s: %s every %ds [%s] last=%s",
+                        s.name, s.dataset_path, s.interval_seconds, status, s.last_run or "never")
+        return 0
+
+    if args.scheduler_action == "add":
+        sched = EvalSchedule(
+            name=args.name,
+            dataset_path=args.dataset,
+            provider=args.provider,
+            model=args.model,
+            metrics=args.metrics,
+            interval_seconds=args.interval,
+            limit=args.limit,
+        )
+        engine.add(sched)
+        logger.info("Schedule added: %s (every %ds)", sched.name, sched.interval_seconds)
+        return 0
+
+    if args.scheduler_action == "run":
+        logger.info("Checking for due schedules...")
+
+        def runner(sched: EvalSchedule) -> int:
+            import subprocess
+            cmd = [
+                "harness", "eval",
+                "-d", sched.dataset_path,
+                "-p", sched.provider,
+                "-m", sched.model,
+                "--metrics", *sched.metrics,
+                "--limit", str(sched.limit),
+                "--gate", sched.gate,
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                print(result.stderr)
+            return result.returncode
+
+        results = engine.run_due(runner)
+        for r in results:
+            status = "✓" if r.get("status") == "ok" else "✗"
+            logger.info("  %s %s (%s)", status, r.get("schedule"), r.get("status"))
+        return 0
+
     return 0
 
 
