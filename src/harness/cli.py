@@ -17,6 +17,7 @@ from harness.contracts.risk import (
 )
 from harness.contracts.trace import ObservableEvent
 from harness.errors import HarnessError
+from harness.escalation import EscalationEngine, GateAction
 from harness.evaluator import EvalSample, EvaluationConfigInput, EvaluationEngine
 from harness.evaluator_rag import RAGEvaluator, RAGSample
 from harness.evaluator_agent import AgentEvaluator, AgentSample, AgentTrajectory
@@ -71,6 +72,8 @@ def build_parser() -> argparse.ArgumentParser:
                        default=None, help="Safety relevance level for risk scoring")
     eval_.add_argument("--historical-stability", choices=[h.value for h in HistoricalStability],
                        default=None, help="Historical stability for risk multiplier")
+    eval_.add_argument("--gate", choices=["pass", "warning", "block"], default=None,
+                       help="Escalation gate: exit code reflects severity of failures")
     eval_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
     rag_ = sub.add_parser("rag-eval", help="Run a RAG evaluation with context documents")
@@ -85,6 +88,8 @@ def build_parser() -> argparse.ArgumentParser:
     rag_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
     rag_.add_argument("--max-tokens", type=int, default=512, help="Max tokens per response")
     rag_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
+    rag_.add_argument("--gate", choices=["pass", "warning", "block"], default=None,
+                      help="Escalation gate: exit code reflects severity of failures")
     rag_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
     agent_ = sub.add_parser("agent-eval", help="Run an agent trajectory evaluation")
@@ -100,6 +105,8 @@ def build_parser() -> argparse.ArgumentParser:
     agent_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
     agent_.add_argument("--max-tokens", type=int, default=512, help="Max tokens per response")
     agent_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
+    agent_.add_argument("--gate", choices=["pass", "warning", "block"], default=None,
+                        help="Escalation gate: exit code reflects severity of failures")
     agent_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
     cmp_ = sub.add_parser("compare", help="Compare multiple models on the same dataset")
@@ -256,8 +263,20 @@ def _run_eval(args: argparse.Namespace) -> int:
             ra = summary.risk_assessment
             logger.info("  Risk:    %s (score=%.1f, gate=%s)", ra.level.value, ra.score, ra.gate)
             logger.info("  Severity: %d (max failure severity)", summary.max_severity)
+
+        escalation_verdict = None
+        if args.gate:
+            engine = EscalationEngine()
+            escalation_verdict = engine.evaluate(summary)
+            logger.info("  Gate:    %s — %s", escalation_verdict.action.value, escalation_verdict.reason)
+
         logger.info("  Report:  %s", out_path)
 
+        if escalation_verdict:
+            if args.gate == "block" and escalation_verdict.action in (GateAction.BLOCK, GateAction.WARNING):
+                return 2 if escalation_verdict.action == GateAction.BLOCK else 1
+            if args.gate == "warning" and escalation_verdict.action == GateAction.WARNING:
+                return 1
         return 0
 
     except HarnessError as e:
