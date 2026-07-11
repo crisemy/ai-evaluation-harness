@@ -76,6 +76,7 @@ Automated evaluation runs in CI/CD pipelines with GitHub Actions:
 - PR Comment Reporting — `actions/github-script@v7` posts a status table per-pipeline-run
 - Artifact Publishing — `actions/upload-artifact@v4` saves reports, dashboards, time series, and logs per job
 - Status Badge — `BadgeGenerator` in `src/harness/ci.py` generates shields.io-compatible SVG badge; `harness ci badge` CLI command
+- CORE Alignment — CI metadata envelope (`--ci-env`, `--release-id`), KPI baseline comparison (`harness ci kpi`), release quality report (`harness ci report`), ASR gating (`--asr-threshold`), coverage enforcement (`--coverage-min`), failure code alignment (CXT_ERR added), rollback trigger in scheduled workflow
 
 All originally planned phases are complete. Additional phases are defined below and tracked in ROADMAP.md.
 

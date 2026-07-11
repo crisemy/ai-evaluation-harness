@@ -53,9 +53,11 @@ Provides GitHub Actions workflows for automated evaluation in CI pipelines, PR c
 
 Components:
 
-- **`.github/workflows/harness-eval.yml`** — CI workflow with 5 parallel jobs: unit tests, evaluation matrix (eval/rag-eval/agent-eval), prompt regression, red team security, and combined summary report. Runs on push/PR.
-- **`.github/workflows/harness-scheduled.yml`** — Scheduled workflow triggered by cron (Monday/Thursday 06:00 UTC) and `workflow_dispatch` with configurable dataset, model, and entry limit.
+- **`.github/workflows/harness-eval.yml`** — CI workflow with 5 parallel jobs: unit tests, evaluation matrix (eval/rag-eval/agent-eval), prompt regression, red team security, and combined summary report. Runs on push/PR. All jobs use CI metadata envelope (`--ci-env`, `--release-id`, `--execution-id`) and coverage enforcement (`--coverage-min 0.9`).
+- **`.github/workflows/harness-scheduled.yml`** — Scheduled workflow triggered by cron (Monday/Thursday 06:00 UTC) and `workflow_dispatch` with configurable dataset, model, and entry limit. Runs KPI baseline comparison, release report, badge generation, and rollback trigger on failure.
 - **`BadgeGenerator`** (`src/harness/ci.py`) — Generates a shields.io-compatible SVG badge from the latest time series snapshot. Exposed via `harness ci badge --store .harness/timeseries.ndjson -o badge.svg`.
+- **`ReleaseReportGenerator`** (`src/harness/ci.py`) — Aggregates risk level, ASR, coverage, and KPI baseline verdicts into a Go/Conditional-Go/No-Go release decision. Exposed via `harness ci report`.
+- **`BaselineComparator`** (`src/harness/kpi_baseline.py`) — Compares current metrics against historical baselines and produces Green/Yellow/Red verdicts per KPI using CORE-defined thresholds. Exposed via `harness ci kpi`.
 - **PR Comment Reporting** — Uses `actions/github-script@v7` to post a per-job status table as a PR comment after each pipeline run.
 
 ## Governance Layer (Phase 6 — CORE Governance Integration)
@@ -160,7 +162,8 @@ src/harness/
 │   └── dashboard.py         # DashboardGenerator — static HTML dashboard generation
 ├── escalation.py            # EscalationEngine — severity gate map, failure codes (Phase 6)
 ├── prompt_regression.py     # PromptRegistry, PromptRegressionMetric (Phase 6)
-├── ci.py                    # BadgeGenerator — shields.io SVG badge for CI/CD (Phase 7)
+├── ci.py                    # BadgeGenerator + ReleaseReportGenerator — CI/CD helpers (Phase 7)
+├── kpi_baseline.py          # BaselineComparator — KPI comparison & Green/Yellow/Red verdicts (Phase 7)
 ├── scheduler.py             # SchedulerEngine — interval-based continuous eval (Phase 6)
 ├── risk/                    # Risk-based prioritization (Phase 6)
 │   └── __init__.py          # RiskClassifier

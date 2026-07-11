@@ -77,6 +77,10 @@ jobs:
             ${{ matrix.extra-flags }} \
             -o reports/${{ matrix.eval-type }}-report.json \
             --gate warning \
+            --ci-env ci \
+            --release-id ${{ github.run_id }} \
+            --execution-id ${{ github.run_attempt }}-${{ github.sha }} \
+            --coverage-min 0.9 \
             --verbose 2>&1 | tee reports/${{ matrix.eval-type }}-output.log
       - name: Generate dashboard
         if: always()
@@ -115,6 +119,8 @@ jobs:
             --model phi3 \
             --limit 10 \
             -o reports/prompt-regression-report.json \
+            --ci-env ci \
+            --release-id ${{ github.run_id }} \
             --verbose 2>&1 | tee reports/prompt-regression-output.log
       - name: Upload regression artifacts
         if: always()
@@ -147,6 +153,7 @@ jobs:
           harness red-team \
             -m phi3 \
             -o reports/red-team-report.json \
+            --asr-threshold 10.0 \
             --verbose 2>&1 | tee reports/red-team-output.log
       - name: Upload security artifacts
         if: always()

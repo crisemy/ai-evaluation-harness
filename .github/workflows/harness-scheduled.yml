@@ -49,6 +49,10 @@ jobs:
             --limit "$LIMIT" \
             --risk major \
             --gate warning \
+            --coverage-min 0.9 \
+            --ci-env ci \
+            --release-id "${{ github.run_id }}" \
+            --execution-id "${{ github.run_attempt }}-${{ github.sha }}" \
             -o reports/scheduled-report.json \
             --verbose 2>&1 | tee reports/scheduled-output.log
       - name: Generate dashboard
@@ -57,12 +61,34 @@ jobs:
           harness monitor dashboard \
             -o reports/scheduled-dashboard.html \
             --title "Scheduled Regression — $(date +%Y-%m-%d)"
+      - name: KPI baseline comparison
+        id: kpi
+        if: always()
+        run: |
+          harness ci kpi \
+            --store .harness/timeseries.ndjson \
+            -o reports/kpi-report.json 2>&1 | tee reports/kpi-output.log
+      - name: Generate release report
+        id: release_report
+        if: always()
+        run: |
+          harness ci report \
+            --store .harness/timeseries.ndjson \
+            --risk-level major \
+            -o reports/release-report.json 2>&1 | tee reports/release-output.log
       - name: Generate status badge
         if: always()
         run: |
           harness ci badge \
             --store .harness/timeseries.ndjson \
             -o badge.svg
+      - name: Rollback trigger
+        if: failure()
+        run: |
+          echo "::warning::CRITICAL: Evaluation pipeline failed. Review artifacts before proceeding."
+          echo "Rollback procedure: docs/rollback_checklist.md"
+          echo "Last known good version: $(git rev-parse HEAD~1)"
+          echo "See artifacts: reports/release-report.json, reports/kpi-report.json"
       - name: Upload regression artifacts
         if: always()
         uses: actions/upload-artifact@v4

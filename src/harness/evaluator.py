@@ -45,6 +45,10 @@ class EvaluationConfigInput:
     model: str = "phi3"
     metrics: list[str] = field(default_factory=lambda: ["exact_match", "contains"])
     risk_profile: RiskProfile | None = None
+    environment: str = "local"
+    release_id: str = ""
+    execution_id: str = ""
+    owner: str = ""
 
 
 class EvaluationEngine:
@@ -106,6 +110,10 @@ class EvaluationEngine:
             provider=self._config.provider,
             model=self._config.model,
             metrics=self.metric_names,
+            environment=self._config.environment,
+            release_id=self._config.release_id,
+            execution_id=self._config.execution_id,
+            owner=self._config.owner,
         )
 
         env = EnvironmentInfo(

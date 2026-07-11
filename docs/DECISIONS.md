@@ -262,3 +262,63 @@ Add a CI/CD layer with four GitHub Actions workflows and one new CLI module:
 - `harness ci badge` CLI command added — generates `badge.svg` from time series data
 - `.gitignore` updated — `badge.svg` and `reports/` are ignored as run artifacts
 - All 5 CORE prerequisite conditions were already satisfied (non-interactive CLI, exit codes, configurable paths)
+
+---
+
+## ADR-008: CORE Alignment for CI/CD
+
+- **Date:** 2026-07-11
+- **Status:** Accepted
+
+### Context
+
+After deploying the CI/CD workflows (Phase 7, ADR-007), a gap analysis against the AI QA Core Framework revealed several areas where the implementation didn't fully satisfy CORE specifications for CI pipeline integration:
+
+1. **CI Metadata Envelope** — CORE's `data_contracts.md` requires a canonical metadata envelope with `environment`, `release_id`, `execution_id`, and `owner` fields. Our `EvaluationConfig` had none of these.
+2. **KPI Baseline Comparison** — CORE's `kpi_governance.md` defines Green/Yellow/Red thresholds per KPI and requires comparison against historical baselines. Our scheduled workflow ran evaluations without comparing against prior results.
+3. **Release Quality Report** — CORE's `release_quality_report.md` template defines a Go/Conditional-Go/No-Go release decision framework. We had no equivalent output.
+4. **ASR Gating** — CORE's `red_team_suite.md` Section 5.4 says "Gate releases on critical security thresholds." Our red team ran but didn't gate CI.
+5. **Coverage Enforcement** — CORE's `kpi_governance.md` defines Evaluation Coverage >= 90% as Green. We had no enforcement.
+6. **Failure Code Alignment** — CORE's `risk_prioritization_contracts.md` Section 5.1 defines 12 failure codes including `CXT_ERR` (Context Overflow). Our `CON_ERR` was mapped to "Consistency Failure" instead of CORE's "Context Overflow" meaning.
+7. **Rollback in CI** — CORE's `rollback_procedure.md` defines a 6-step rollback workflow. We had a rollback checklist doc but no pipeline integration.
+
+### Decision
+
+Implement all 7 gap items:
+
+1. **CI Metadata Envelope** — Added `environment`, `release_id`, `execution_id`, `owner` fields to `EvaluationConfig` and `EvaluationConfigInput`. All eval commands accept `--ci-env`, `--release-id`, `--execution-id`, `--owner` flags. Metadata flows through to all reports and time series snapshots.
+
+2. **KPI Baseline Comparison** — Created `src/harness/kpi_baseline.py` with `BaselineComparator` that reads historical snapshots from the time series store, compares current metrics against CORE thresholds, and produces `KPIVerdict.GREEN/YELLOW/RED`. Exposed as `harness ci kpi --store .harness/timeseries.ndjson -o kpi-report.json`.
+
+3. **Release Quality Report** — Extended `src/harness/ci.py` with `ReleaseReportGenerator` that aggregates risk level, ASR, coverage, and KPI baseline verdicts into a `ReleaseVerdict.GO/CONDITIONAL_GO/NO_GO` decision. Exposed as `harness ci report`.
+
+4. **ASR Gating** — Added `--asr-threshold` (default 100%, no gating) to `harness red-team`. CI workflow passes `--asr-threshold 10.0` to gate when attack success rate exceeds 10%.
+
+5. **Coverage Enforcement** — Added `--coverage-min` to eval/rag-eval/agent-eval. All CI workflows use `--coverage-min 0.9`. If `--limit` reduces sample size below 90% coverage, the command exits with code 1.
+
+6. **Failure Code Alignment** — Added `CXT_ERR` (severity 3) to `FailureCode` enum for Context Overflow. `CON_ERR` retains "Consistency Failure" semantics as it's used in existing metrics.
+
+7. **Rollback in CI** — Added a rollback trigger step to `harness-scheduled.yml` that fires on pipeline failure, logs the last known good version, and references `docs/rollback_checklist.md` for the full procedure.
+
+### Rationale
+
+- All gaps were identified systematically via a CORE framework audit against our implementation
+- Changes are opt-in via CLI flags (defaults preserve backward compatibility)
+- New modules (`kpi_baseline.py`) follow existing patterns in the codebase
+- CI workflows updated to use the new flags — local usage unchanged
+- `CXT_ERR` added as a new code rather than renaming `CON_ERR` to avoid breaking existing consumers
+- Threshold values (ASR 10%, coverage 90%, KPI Green/Yellow/Red) match CORE specifications
+
+### Consequences
+
+- `EvaluationConfig` now has 4 new fields: `environment`, `release_id`, `execution_id`, `owner`
+- `EvaluationConfigInput` has matching 4 new fields
+- `src/harness/kpi_baseline.py` created — `BaselineComparator`, `KPIVerdict`, `KPIComparison`, `BaselineReport`
+- `src/harness/ci.py` extended — `ReleaseReportGenerator`, `ReleaseVerdict`, `ReleaseReport`
+- `harness ci kpi` CLI command added — KPI baseline comparison
+- `harness ci report` CLI command added — release quality report
+- `harness red-team` now accepts `--asr-threshold` flag
+- All eval commands now accept `--ci-env`, `--release-id`, `--execution-id`, `--owner`, `--coverage-min`
+- `FailureCode` gains `CXT_ERR` (severity 3)
+- `.github/workflows/harness-scheduled.yml` updated with KPI/release report steps and rollback trigger
+- `.github/workflows/harness-eval.yml` updated with CI metadata and ASR threshold flags

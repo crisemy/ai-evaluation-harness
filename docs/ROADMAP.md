@@ -150,12 +150,27 @@ Goal: Automate evaluation runs in CI/CD pipelines and surface results in pull re
 | C3 | Artifact Publishing | Uploads reports, dashboards, time series, and logs as `actions/upload-artifact@v4` per job | ✅ Complete |
 | C4 | Scheduled Regression Runs | `harness-scheduled.yml` — cron triggers (Mon/Thu 06:00 UTC) + `workflow_dispatch` with configurable dataset/model/limit | ✅ Complete |
 | C5 | Status Badge | `BadgeGenerator` in `src/harness/ci.py` — generates shields.io-compatible SVG badge; `harness ci badge` CLI command | ✅ Complete |
+| C6 | CORE Alignment | CI metadata envelope, KPI baseline comparison, release quality report, ASR gating, coverage enforcement, failure code alignment | ✅ Complete |
 
 ### Phase 7 - Dependencies
 
 - CLI must support non-interactive / headless mode ✅ (already satisfied)
 - Exit codes must reliably signal pass/fail for CI gating ✅ (0=pass, 1=fail, 2=block)
 - Report output paths must be configurable ✅ (--output/-o on all eval commands)
+
+### Phase 7 - CORE Alignment (C6)
+
+Additional changes to align with the AI QA Core Framework CI/CD specifications:
+
+| Item | Change | CORE Reference |
+|------|--------|----------------|
+| CI Metadata Envelope | `EvaluationConfig` now carries `environment`, `release_id`, `execution_id`, `owner` fields; eval commands accept `--ci-env`, `--release-id`, `--execution-id`, `--owner` | data_contracts.md metadata envelope |
+| KPI Baseline Comparison | `BaselineComparator` in `kpi_baseline.py` — Green/Yellow/Red per KPI using CORE thresholds, `harness ci kpi` | kpi_governance.md thresholds |
+| Release Quality Report | `ReleaseReportGenerator` in `ci.py` — Go/Conditional-Go/No-Go aggregating risk, ASR, coverage, KPI verdicts; `harness ci report` | release_quality_report.md template |
+| ASR Gating | `--asr-threshold` on `harness red-team` — gates CI pipeline when attack success rate exceeds threshold (default 10%) | red_team_suite.md Section 5.4 |
+| Coverage Enforcement | `--coverage-min` on eval/rag-eval/agent-eval — fails if limit drops coverage below minimum | kpi_governance.md Evaluation Coverage KPI |
+| Failure Code Alignment | `CXT_ERR` added for Context Overflow; `CON_ERR` re-mapped for Consistency Failure; code severity table aligned | risk_prioritization_contracts.md Section 5.1 |
+| Rollback in CI | Scheduled workflow includes rollback trigger step on failure, logs last known good version and references rollback_checklist.md | 02_operations/rollback_procedure.md |
 
 ---
 

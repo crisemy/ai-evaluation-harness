@@ -137,6 +137,7 @@ Project Stage: **Phase 7 Complete** — CI/CD Integration
 | C3 | Artifact Publishing — uploads reports, dashboards, and time series as build artifacts | ✅ Complete |
 | C4 | Scheduled Regression Runs — cron workflow (Mon/Thu) with `workflow_dispatch` support | ✅ Complete |
 | C5 | Status Badge (`BadgeGenerator`, `harness ci badge`) — generates shields.io-compatible SVG badge | ✅ Complete |
+| C6 | CORE Alignment — CI metadata envelope, KPI baseline comparison (`harness ci kpi`), release report (`harness ci report`), CON_ERR/CXT_ERR fix, ASR gating, coverage enforcement | ✅ Complete |
 
 The full evaluation pipeline works end-to-end: **load dataset → execute prompts → evaluate metrics → generate report**.
 
@@ -230,7 +231,8 @@ src/harness/
 ├── executor.py           # PromptExecutor
 ├── escalation.py         # EscalationEngine — severity gate map, failure codes
 ├── prompt_regression.py  # PromptRegistry, PromptRegressionMetric
-├── ci.py                 # BadgeGenerator — shields.io SVG badge for CI/CD (Phase 7)
+├── ci.py                 # BadgeGenerator + ReleaseReportGenerator — CI/CD (Phase 7)
+├── kpi_baseline.py       # BaselineComparator — KPI comparison & Green/Yellow/Red verdicts (Phase 7)
 ├── scheduler.py          # SchedulerEngine — interval-based continuous eval
 ├── contracts/            # Data contracts (dataclasses)
 │   ├── dataset.py        # Dataset, DatasetEntry, DatasetMetadata, Difficulty
@@ -343,11 +345,20 @@ start dashboard.html
 ```powershell
 # Generate a shields.io-compatible status badge from the latest metric snapshot
 harness ci badge --store .harness/timeseries.ndjson --label "pass rate" -o badge.svg
+
+# Compare current metrics against baseline and produce Green/Yellow/Red verdict
+harness ci kpi --store .harness/timeseries.ndjson -o kpi-report.json
+
+# Generate a release quality report (Go / Conditional Go / No-Go)
+harness ci report --store .harness/timeseries.ndjson --risk-level high --asr 5.0 -o release-report.json
 ```
 
 ### CORE Governance Commands (Phase 6)
 
 ```powershell
+# CI-aware evaluation (metadata envelope + coverage enforcement)
+harness eval -d datasets/qa_kaggle.json -m phi3 --limit 5 --ci-env ci --release-id PR-42 --coverage-min 0.9
+
 # Risk-based evaluation (classify change, set risk tolerance)
 harness eval -d datasets/qa_kaggle.json -m phi3 --limit 5 --risk major --risk-threshold 0.7
 
@@ -361,8 +372,8 @@ harness agent-eval -d datasets/agent_dataset.json -m phi3 --metrics step_correct
 # Prompt regression testing (compare against registered baseline)
 harness prompt-regress -d datasets/qa_kaggle.json -m phi3 --limit 10
 
-# Red team security evaluation (3 default LLM attack tests)
-harness red-team -d datasets/qa_kaggle.json -m phi3 --limit 5
+# Red team security evaluation (3 default LLM attack tests, with ASR gating)
+harness red-team -d datasets/qa_kaggle.json -m phi3 --limit 5 --asr-threshold 10.0
 
 # Override management (stubs)
 harness override request --change-type major --reason "Refactor evaluator"

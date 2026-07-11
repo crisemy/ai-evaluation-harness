@@ -31,6 +31,10 @@ class EvaluationConfig:
     provider: str
     model: str
     metrics: list[str]
+    environment: str = "local"
+    release_id: str = ""
+    execution_id: str = ""
+    owner: str = ""
 
 
 @dataclass

@@ -23,6 +23,8 @@ harness override list             # list override requests
 harness monitor status            # check latest metrics
 harness monitor dashboard -o dashboard.html   # generate dashboard
 harness ci badge -o badge.svg                 # generate CI status badge
+harness ci kpi -o kpi-report.json             # KPI baseline comparison
+harness ci report -o release-report.json      # release quality report (Go/Conditional-Go/No-Go)
 ```
 
 ## Project Layout
@@ -33,7 +35,8 @@ harness ci badge -o badge.svg                 # generate CI status badge
 - `.harness/`, `dashboard.html`, `report.json`, `*.ndjson` are gitignored run artifacts
 - **CORE governance** modules: `risk/`, `red_team/`, `escalation.py`, `prompt_regression.py`, `scheduler.py`
 - **CI/CD** workflows in `.github/workflows/`: `harness-eval.yml` (push/PR), `harness-scheduled.yml` (cron)
-- **Badge generation**: `ci.py` — `BadgeGenerator` for shields.io SVG badges
+- **Badge generation + release reports**: `ci.py` — `BadgeGenerator`, `ReleaseReportGenerator`
+- **KPI baseline comparison**: `kpi_baseline.py` — `BaselineComparator` with Green/Yellow/Red verdicts
 
 ## Documentation Rules (Mandatory)
 

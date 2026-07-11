@@ -52,6 +52,15 @@ METRIC_REGISTRY = {
 }
 
 
+def _add_ci_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--ci-env", default="local", help="CI environment name (local, ci, staging, prod)")
+    parser.add_argument("--release-id", default="", help="Release or PR identifier")
+    parser.add_argument("--execution-id", default="", help="Unique execution identifier")
+    parser.add_argument("--owner", default="", help="Owner or trigger of the evaluation")
+    parser.add_argument("--coverage-min", type=float, default=0.0,
+                        help="Minimum evaluation coverage fraction (fails if limit reduces below this)")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="harness",
@@ -78,6 +87,7 @@ def build_parser() -> argparse.ArgumentParser:
                        default=None, help="Historical stability for risk multiplier")
     eval_.add_argument("--gate", choices=["pass", "warning", "block"], default=None,
                        help="Escalation gate: exit code reflects severity of failures")
+    _add_ci_args(eval_)
     eval_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
     rag_ = sub.add_parser("rag-eval", help="Run a RAG evaluation with context documents")
@@ -92,6 +102,7 @@ def build_parser() -> argparse.ArgumentParser:
     rag_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
     rag_.add_argument("--max-tokens", type=int, default=512, help="Max tokens per response")
     rag_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
+    _add_ci_args(rag_)
     rag_.add_argument("--gate", choices=["pass", "warning", "block"], default=None,
                       help="Escalation gate: exit code reflects severity of failures")
     rag_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
@@ -111,6 +122,7 @@ def build_parser() -> argparse.ArgumentParser:
     agent_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
     agent_.add_argument("--gate", choices=["pass", "warning", "block"], default=None,
                         help="Escalation gate: exit code reflects severity of failures")
+    _add_ci_args(agent_)
     agent_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
     cmp_ = sub.add_parser("compare", help="Compare multiple models on the same dataset")
@@ -145,6 +157,8 @@ def build_parser() -> argparse.ArgumentParser:
     rt_.add_argument("--output", "-o", default="red_team_report.json", help="Output report path")
     rt_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
     rt_.add_argument("--max-tokens", type=int, default=256, help="Max tokens per response")
+    rt_.add_argument("--asr-threshold", type=float, default=100.0,
+                      help="Max ASR %% before gating (fails if exceeded)")
     rt_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
     ovr_ = sub.add_parser("override", help="Human override management (CORE governance)")
@@ -174,6 +188,18 @@ def build_parser() -> argparse.ArgumentParser:
     badge_.add_argument("--store", default=".harness/timeseries.ndjson", help="Time series store path")
     badge_.add_argument("--label", default="pass rate", help="Badge label text")
     badge_.add_argument("--output", "-o", default="badge.svg", help="Output SVG file path")
+
+    report_ = ci_sub.add_parser("report", help="Generate a release quality report (Go/Conditional-Go/No-Go)")
+    report_.add_argument("--store", default=".harness/timeseries.ndjson", help="Time series store path")
+    report_.add_argument("--risk-level", default="", help="Risk level from evaluation")
+    report_.add_argument("--risk-score", type=float, default=0.0, help="Risk score")
+    report_.add_argument("--asr", type=float, default=None, help="Red team attack success rate")
+    report_.add_argument("--coverage", type=float, default=1.0, help="Evaluation coverage fraction")
+    report_.add_argument("--output", "-o", default="release-report.json", help="Output report path")
+
+    kpi_ = ci_sub.add_parser("kpi", help="Compare current metrics against baseline and produce verdict")
+    kpi_.add_argument("--store", default=".harness/timeseries.ndjson", help="Time series store path")
+    kpi_.add_argument("--output", "-o", default="kpi-report.json", help="Output report path")
 
     mon_ = sub.add_parser("monitor", help="Observability and monitoring commands")
     mon_sub = mon_.add_subparsers(dest="monitor_action", required=True)
@@ -258,11 +284,21 @@ def _run_eval(args: argparse.Namespace) -> int:
         executor = PromptExecutor(loader, provider, executor_config)
 
         dataset = loader.load(str(dataset_path))
+        total_available = len(dataset.entries)
         entries = dataset.entries
         if args.limit > 0:
             entries = entries[: args.limit]
 
-        logger.info("Loaded %d entries from %s", len(entries), dataset_path)
+        coverage = len(entries) / total_available if total_available else 1.0
+        if args.coverage_min > 0 and coverage < args.coverage_min:
+            logger.error(
+                "Coverage %.0f%% below minimum %.0f%% (%d/%d entries)",
+                coverage * 100, args.coverage_min * 100, len(entries), total_available,
+            )
+            return 1
+
+        logger.info("Loaded %d/%d entries from %s (coverage %.0f%%)",
+                     len(entries), total_available, dataset_path, coverage * 100)
 
         eval_id = uuid.uuid4().hex[:12]
         _attach_trace_observer(tracer, eval_id, "eval", str(dataset_path),
@@ -301,6 +337,10 @@ def _run_eval(args: argparse.Namespace) -> int:
             model=args.model,
             metrics=args.metrics,
             risk_profile=risk_profile,
+            environment=args.ci_env,
+            release_id=args.release_id,
+            execution_id=args.execution_id,
+            owner=args.owner,
         )
         engine = EvaluationEngine(metrics, eval_config)
         summary = engine.evaluate(responses)
@@ -376,11 +416,21 @@ def _run_rag_eval(args: argparse.Namespace) -> int:
         executor = PromptExecutor(loader, provider, executor_config)
 
         dataset = loader.load(str(dataset_path))
+        total_available = len(dataset.entries)
         entries = dataset.entries
         if args.limit > 0:
             entries = entries[: args.limit]
 
-        logger.info("Loaded %d RAG entries from %s", len(entries), dataset_path)
+        coverage = len(entries) / total_available if total_available else 1.0
+        if args.coverage_min > 0 and coverage < args.coverage_min:
+            logger.error(
+                "Coverage %.0f%% below minimum %.0f%% (%d/%d entries)",
+                coverage * 100, args.coverage_min * 100, len(entries), total_available,
+            )
+            return 1
+
+        logger.info("Loaded %d/%d RAG entries from %s (coverage %.0f%%)",
+                     len(entries), total_available, dataset_path, coverage * 100)
 
         eval_id = uuid.uuid4().hex[:12]
         _attach_trace_observer(tracer, eval_id, "rag-eval", str(dataset_path),
@@ -446,6 +496,10 @@ def _run_rag_eval(args: argparse.Namespace) -> int:
             provider=args.provider,
             model=args.model,
             metrics=args.metrics,
+            environment=args.ci_env,
+            release_id=args.release_id,
+            execution_id=args.execution_id,
+            owner=args.owner,
         )
         rag_evaluator = RAGEvaluator(metrics, config=eval_cfg)
         summary = rag_evaluator.evaluate(executed_samples)
@@ -496,11 +550,21 @@ def _run_agent_eval(args: argparse.Namespace) -> int:
     try:
         loader = JSONDatasetLoader()
         dataset = loader.load(str(dataset_path))
+        total_available = len(dataset.entries)
         entries = dataset.entries
         if args.limit > 0:
             entries = entries[: args.limit]
 
-        logger.info("Loaded %d agent entries from %s", len(entries), dataset_path)
+        coverage = len(entries) / total_available if total_available else 1.0
+        if args.coverage_min > 0 and coverage < args.coverage_min:
+            logger.error(
+                "Coverage %.0f%% below minimum %.0f%% (%d/%d entries)",
+                coverage * 100, args.coverage_min * 100, len(entries), total_available,
+            )
+            return 1
+
+        logger.info("Loaded %d/%d agent entries from %s (coverage %.0f%%)",
+                     len(entries), total_available, dataset_path, coverage * 100)
 
         eval_id = uuid.uuid4().hex[:12]
         _attach_trace_observer(tracer, eval_id, "agent-eval", str(dataset_path),
@@ -561,6 +625,10 @@ def _run_agent_eval(args: argparse.Namespace) -> int:
             provider=args.provider,
             model=args.model,
             metrics=args.metrics,
+            environment=args.ci_env,
+            release_id=args.release_id,
+            execution_id=args.execution_id,
+            owner=args.owner,
         )
         agent_evaluator = AgentEvaluator(metrics, config=eval_cfg)
         summary = agent_evaluator.evaluate(agent_samples)
@@ -798,6 +866,14 @@ def _run_red_team(args: argparse.Namespace) -> int:
         out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
 
         logger.info("Report: %s", out_path)
+
+        if args.asr_threshold < 100.0 and summary.attack_success_rate > args.asr_threshold:
+            logger.error(
+                "ASR %.1f%% exceeds threshold %.1f%% — gating",
+                summary.attack_success_rate, args.asr_threshold,
+            )
+            return 1
+
         return 1 if summary.failed > 0 else 0
 
     except HarnessError as e:
@@ -892,6 +968,49 @@ def _run_ci(args: argparse.Namespace) -> int:
         out = gen.write(svg, args.output)
         logger.info("Badge written to %s", out)
         return 0
+
+    if args.ci_action == "report":
+        from harness.ci import ReleaseReportGenerator
+        store = TimeSeriesStore(args.store)
+        time_series = store.get_time_series()
+        current_metrics: dict[str, float] = {}
+        for ts in time_series:
+            if ts.snapshots:
+                current_metrics[ts.metric_name] = ts.snapshots[-1].score
+
+        gen = ReleaseReportGenerator(store_path=args.store)
+        report = gen.generate(
+            current_metrics=current_metrics if current_metrics else None,
+            risk_level=args.risk_level,
+            risk_score=args.risk_score,
+            asr=args.asr if args.asr is not None else None,
+            coverage=args.coverage,
+        )
+        out = ReleaseReportGenerator.write(report, args.output)
+        logger.info("Release report written to %s", out)
+        logger.info("Verdict: %s", report.verdict.value)
+        for reason in report.reasons:
+            logger.info("  → %s", reason)
+        return 0
+
+    if args.ci_action == "kpi":
+        from harness.kpi_baseline import BaselineComparator
+        comparator = BaselineComparator(store_path=args.store)
+        time_series = TimeSeriesStore(args.store).get_time_series()
+        current_metrics: dict[str, float] = {}
+        for ts in time_series:
+            if ts.snapshots:
+                current_metrics[ts.metric_name] = ts.snapshots[-1].score
+
+        report = comparator.compare(current_metrics)
+        out = BaselineComparator.generate_report(report, args.output)
+        logger.info("KPI report written to %s", out)
+        logger.info("Overall: %s", report.overall_verdict.value)
+        for c in report.comparisons:
+            logger.info("  %s: current=%.3f baseline=%s → %s",
+                        c.metric_name, c.current, c.baseline or "N/A", c.verdict.value)
+        return 0
+
     return 0
 
 

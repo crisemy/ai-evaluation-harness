@@ -20,6 +20,7 @@ class FailureCode(str, Enum):
     CHK_ERR = "CHK_ERR"
     HAL_ERR = "HAL_ERR"
     BIAS_ERR = "BIAS_ERR"
+    CXT_ERR = "CXT_ERR"
 
 
 FAILURE_CODE_SEVERITY: dict[FailureCode, int] = {
@@ -30,6 +31,7 @@ FAILURE_CODE_SEVERITY: dict[FailureCode, int] = {
     FailureCode.CON_ERR: 3,
     FailureCode.ACC_ERR: 3,
     FailureCode.RET_ERR: 3,
+    FailureCode.CXT_ERR: 3,
     FailureCode.CHK_ERR: 2,
     FailureCode.BIAS_ERR: 2,
     FailureCode.LAT_ERR: 2,
