@@ -12,7 +12,7 @@ The document covers the MVP (Prompt Evaluation) and Phase 2 (RAG Evaluation). Fu
 
 ### 1.3 Governing Methodology
 
-This project follows the AI QA Core Framework methodology (`ai-qa-core-framework/`). Refer to `00_project_methodology.md` for the overall project lifecycle and `01_fundamentals/data_contracts.md` for data contract patterns.
+This project follows the AI QA Core Framework methodology (`ai-qa-core-framework/`). Refer to `ai-qa-core-framework/00_project_methodology.md` for the overall project lifecycle and `ai-qa-core-framework/01_fundamentals/data_contracts.md` for data contract patterns.
 
 ---
 

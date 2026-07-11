@@ -6,7 +6,7 @@ This document defines the strategy for extending the AI Evaluation Harness to ev
 
 ## 1. Decision Summary
 
-DeepEval has been selected as the RAG evaluation framework for Phase 2 (see DECISIONS.md ADR-002).
+DeepEval has been selected as the RAG evaluation framework for Phase 2 (see docs/DECISIONS.md ADR-002).
 
 ### Why DeepEval
 

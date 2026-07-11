@@ -146,14 +146,14 @@ The full evaluation pipeline works end-to-end: **load dataset → execute prompt
 
 | Document | Description |
 | ---------- | ------------- |
-| `VISION.md` | Project vision and long-term goals |
 | `CONTEXT.md` | Problem context and motivation |
-| `ARCHITECTURE.md` | High-level architecture overview |
-| `PLAN.md` | Scope and future phase roadmap |
-| `ROADMAP.md` | Milestones, timeline, and dependencies |
-| `DECISIONS.md` | Architecture decision records |
-| `EVALUATION_PRINCIPLES.md` | Core evaluation principles |
-| `DATASET_SPEC.md` | Dataset format specification |
+| `docs/VISION.md` | Project vision and long-term goals |
+| `docs/ARCHITECTURE.md` | High-level architecture overview |
+| `docs/PLAN.md` | Scope and future phase roadmap |
+| `docs/ROADMAP.md` | Milestones, timeline, and dependencies |
+| `docs/DECISIONS.md` | Architecture decision records |
+| `docs/EVALUATION_PRINCIPLES.md` | Core evaluation principles |
+| `docs/DATASET_SPEC.md` | Dataset format specification |
 | `docs/sdd.md` | Software Design Document (detailed) |
 | `docs/testing_framework_overview.md` | Testing methodology for the harness |
 | `docs/provider_interface.md` | Provider abstraction contract |

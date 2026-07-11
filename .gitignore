@@ -23,3 +23,6 @@ speach.md
 # Datasets — regenerated via scripts/prepare_kaggle_dataset.py
 datasets/
 !datasets/.gitkeep
+
+# ai-qa-core-framework — placeholder, not populated
+ai-qa-core-framework/

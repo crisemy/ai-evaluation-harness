@@ -28,9 +28,9 @@ Define the testing strategy, identify risks, and establish quality contracts bef
 
 | Artifact | CORE Template | Purpose |
 | ---------- | --------------- | --------- |
-| Risk Model Card | `templates/risk_model_card.md` | Identify testing risks (provider reliability, metric correctness) |
+| Risk Model Card | `ai-qa-core-framework/03_personal_tooling/templates/risk_model_card.md` | Identify testing risks (provider reliability, metric correctness) |
 | Test Strategy | This document | Define scope, approach, resources |
-| Quality KPIs | `kpi_governance.md` | Define pass thresholds, coverage targets |
+| Quality KPIs | `ai-qa-core-framework/01_fundamentals/kpi_governance.md` | Define pass thresholds, coverage targets |
 
 ### Key Risks
 
@@ -198,9 +198,9 @@ These principles extend the CORE framework's evaluation guidelines for harness t
 
 | CORE Resource | Usage in Testing |
 | --------------- | ------------------ |
-| `01_fundamentals/data_contracts.md` | Dataset schema validation tests |
-| `01_fundamentals/kpi_governance.md` | Metric threshold and KPI definitions |
-| `01_fundamentals/risk_prioritization_contracts.md` | Testing risk classification |
-| `03_personal_tooling/workflows/ci_pipeline_workflow.md` | CI integration for regression tests |
-| `03_personal_tooling/workflows/regression_workflow.md` | Regression test workflow |
-| `03_personal_tooling/templates/risk_model_card.md` | Testing risk documentation |
+| `ai-qa-core-framework/01_fundamentals/data_contracts.md` | Dataset schema validation tests |
+| `ai-qa-core-framework/01_fundamentals/kpi_governance.md` | Metric threshold and KPI definitions |
+| `ai-qa-core-framework/01_fundamentals/risk_prioritization_contracts.md` | Testing risk classification |
+| `ai-qa-core-framework/03_personal_tooling/workflows/ci_pipeline_workflow.md` | CI integration for regression tests |
+| `ai-qa-core-framework/03_personal_tooling/workflows/regression_workflow.md` | Regression test workflow |
+| `ai-qa-core-framework/03_personal_tooling/templates/risk_model_card.md` | Testing risk documentation |

@@ -7,7 +7,7 @@ Instructions for AI agents working on this repository.
 Read these files in order at session start for project context:
 
 1. **CONTEXT.md** — problem domain, scope, terminology
-2. **ARCHITECTURE.md** — module relationships, data flow
+2. **docs/ARCHITECTURE.md** — module relationships, data flow
 3. **README.md** — setup, usage, current status
 
 ## Key Commands
@@ -32,11 +32,11 @@ harness monitor dashboard -o dashboard.html   # generate dashboard
 After any significant change, update:
 
 - **README.md** — if user-facing behavior changes
-- **ARCHITECTURE.md** — if module relationships change
-- **ROADMAP.md** — if project priorities change
-- **DECISIONS.md** — ADR when an architectural decision is made
+- **docs/ARCHITECTURE.md** — if module relationships change
+- **docs/ROADMAP.md** — if project priorities change
+- **docs/DECISIONS.md** — ADR when an architectural decision is made
 
-When finishing a **Phase** or **Milestone** (per ROADMAP.md), review ALL of the above.
+When finishing a **Phase** or **Milestone** (per docs/ROADMAP.md), review ALL of the above.
 
 ## Constraints
 
