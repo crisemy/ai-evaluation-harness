@@ -47,6 +47,17 @@ Components:
 - **`AlertEngine`** — Evaluates threshold-based `AlertRule` definitions (operators: gt/lt/gte/lte/eq) against historical snapshots, producing `AlertResult` objects for triggered rules.
 - **`DashboardGenerator`** — Generates a self-contained HTML dashboard page with summary cards, alert table, metric history table, and trend indicators.
 
+## CI/CD Layer (Phase 7)
+
+Provides GitHub Actions workflows for automated evaluation in CI pipelines, PR comments, artifact publishing, scheduled regression runs, and status badge generation.
+
+Components:
+
+- **`.github/workflows/harness-eval.yml`** — CI workflow with 5 parallel jobs: unit tests, evaluation matrix (eval/rag-eval/agent-eval), prompt regression, red team security, and combined summary report. Runs on push/PR.
+- **`.github/workflows/harness-scheduled.yml`** — Scheduled workflow triggered by cron (Monday/Thursday 06:00 UTC) and `workflow_dispatch` with configurable dataset, model, and entry limit.
+- **`BadgeGenerator`** (`src/harness/ci.py`) — Generates a shields.io-compatible SVG badge from the latest time series snapshot. Exposed via `harness ci badge --store .harness/timeseries.ndjson -o badge.svg`.
+- **PR Comment Reporting** — Uses `actions/github-script@v7` to post a per-job status table as a PR comment after each pipeline run.
+
 ## Governance Layer (Phase 6 — CORE Governance Integration)
 
 Implements the AI QA Core Framework governance methodology: risk classification, failure escalation, prompt regression testing, red team security evaluation, override management, and continuous scheduling.
@@ -149,6 +160,7 @@ src/harness/
 │   └── dashboard.py         # DashboardGenerator — static HTML dashboard generation
 ├── escalation.py            # EscalationEngine — severity gate map, failure codes (Phase 6)
 ├── prompt_regression.py     # PromptRegistry, PromptRegressionMetric (Phase 6)
+├── ci.py                    # BadgeGenerator — shields.io SVG badge for CI/CD (Phase 7)
 ├── scheduler.py             # SchedulerEngine — interval-based continuous eval (Phase 6)
 ├── risk/                    # Risk-based prioritization (Phase 6)
 │   └── __init__.py          # RiskClassifier

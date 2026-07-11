@@ -5,7 +5,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from harness.contracts.evaluation import EvaluationSummary, FAILURE_CODE_SEVERITY, FailureCode
+from harness.contracts.evaluation import FAILURE_CODE_SEVERITY, FailureCode
+from harness.contracts.report import EvaluationSummary
 from harness.contracts.risk import RiskAssessment, RiskLevel
 
 logger = logging.getLogger(__name__)

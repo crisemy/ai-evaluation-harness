@@ -57,6 +57,7 @@ Continuous monitoring, alerting, and dashboarding for evaluation results over ti
 CORE Governance Integration
 
 Integrated the AI QA Core Framework governance methodology into the harness:
+
 - Risk-based prioritization (RiskClassifier, 7 change types, risk gates)
 - Failure escalation (EscalationEngine, severity/failure codes, --gate flag)
 - Prompt regression testing (PromptRegistry, F1 regression metric)
@@ -64,26 +65,28 @@ Integrated the AI QA Core Framework governance methodology into the harness:
 - Operations tooling (override CLI stubs, rollback checklist)
 - Continuous scheduling (SchedulerEngine, interval-based auto-eval)
 
+### Phase 7 — ✅ Complete
+
+CI/CD Integration
+
+Automated evaluation runs in CI/CD pipelines with GitHub Actions:
+
+- `.github/workflows/harness-eval.yml` — CI workflow triggered on push/PR with 5 parallel jobs (test, evaluate matrix of 3, regress, security, report)
+- `.github/workflows/harness-scheduled.yml` — Scheduled workflow (Mon/Thu) + manual dispatch with configurable dataset/model/limit
+- PR Comment Reporting — `actions/github-script@v7` posts a status table per-pipeline-run
+- Artifact Publishing — `actions/upload-artifact@v4` saves reports, dashboards, time series, and logs per job
+- Status Badge — `BadgeGenerator` in `src/harness/ci.py` generates shields.io-compatible SVG badge; `harness ci badge` CLI command
+
 All originally planned phases are complete. Additional phases are defined below and tracked in ROADMAP.md.
 
 ---
-
-## Phase 7 — CI/CD Integration (Planned)
-
-Automate evaluation runs in CI/CD pipelines and surface results in pull requests.
-
-**Key deliverables:**
-- GitHub Actions workflow (`harness-eval.yml`) triggered on push and PR
-- PR comment reporting with pass/fail breakdown
-- Report and dashboard artifact publishing
-- Scheduled cron workflows for regression tracking
-- Status badge generation
 
 ## Phase 8 — Extended Provider Support (Planned)
 
 Add OpenAI-compatible providers (Groq, OpenRouter, OpenAI, Anthropic, etc.) for broader model access.
 
 **Key deliverables:**
+
 - OpenAI-compatible provider client (covers Groq, OpenRouter, OpenAI)
 - Environment-variable-based configuration (API keys, base URLs)
 - Per-provider cost tracking with token-based pricing

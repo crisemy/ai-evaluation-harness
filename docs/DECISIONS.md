@@ -213,3 +213,52 @@ Integrate the AI QA Core Framework governance methodology across six workstreams
 - CLI now supports 6 new subcommands: `prompt-regress`, `red-team`, `override`, `scheduler`
 - Existing eval commands accept 3 new optional flags: `--risk`, `--risk-threshold`, `--gate`
 - `docs/rollback_checklist.md` created for operational procedures
+
+---
+
+## ADR-007: CI/CD Integration via GitHub Actions
+
+- **Date:** 2026-07-11
+- **Status:** Accepted
+
+### Context
+
+The AI Evaluation Harness had all the building blocks for CI integration — non-interactive CLI, configurable output paths, exit codes for pass/fail gating — but no actual CI/CD workflows. Teams had to manually run evaluations locally and interpret results. Without automated CI pipelines, regression detection was reactive rather than proactive.
+
+### Decision
+
+Add a CI/CD layer with four GitHub Actions workflows and one new CLI module:
+
+1. **`.github/workflows/harness-eval.yml`** — Triggered on push/PR, runs 5 parallel jobs:
+   - `test`: unit tests with pytest, uploads test results
+   - `evaluate` (matrix: eval, rag-eval, agent-eval): smoke tests with --gate warning, generates dashboard, uploads artifacts
+   - `regress`: prompt regression against baseline, uploads artifacts
+   - `security`: red team security scan, uploads artifacts
+   - `report`: aggregates all artifacts, posts a PR comment via `actions/github-script@v7` with a per-job status table
+
+2. **`.github/workflows/harness-scheduled.yml`** — Triggered by cron (Monday/Thursday 06:00 UTC) and `workflow_dispatch`:
+   - Runs a full evaluation with `--risk major --gate warning`
+   - Generates dashboard and status badge
+   - Uploads all artifacts for historical tracking
+
+3. **`BadgeGenerator`** (`src/harness/ci.py`) — Generates a shields.io-compatible SVG badge from the latest MetricSnapshot in the time series store. Exposed via `harness ci badge --store .harness/timeseries.ndjson -o badge.svg`.
+
+### Rationale
+
+- GitHub Actions is the de-facto CI platform for open-source projects on GitHub — no additional service dependency
+- Workflows are defined as YAML in `.github/workflows/` — no infrastructure to manage
+- Parallel job execution minimizes pipeline wall-clock time
+- Matrix strategy covers all evaluation types without duplicating step definitions
+- `actions/github-script@v7` provides PR comment posting without external dependencies
+- `actions/upload-artifact@v4` persists results without a database
+- SVG badge is self-contained, cacheable on gh-pages or raw asset hosting
+- CLI tool (`harness ci badge`) means badge generation works locally and in CI identically
+
+### Consequences
+
+- `.github/workflows/harness-eval.yml` created — runs on every push/PR to main and phase branches
+- `.github/workflows/harness-scheduled.yml` created — runs twice weekly and on manual dispatch
+- `src/harness/ci.py` added — contains `BadgeGenerator` class
+- `harness ci badge` CLI command added — generates `badge.svg` from time series data
+- `.gitignore` updated — `badge.svg` and `reports/` are ignored as run artifacts
+- All 5 CORE prerequisite conditions were already satisfied (non-interactive CLI, exit codes, configurable paths)

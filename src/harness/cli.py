@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from harness.ci import BadgeGenerator
 from harness.comparison import CompareConfig, ComparisonEngine, ModelSpec
 from harness.contracts.risk import (
     ChangeType,
@@ -166,6 +167,14 @@ def build_parser() -> argparse.ArgumentParser:
     add_sched.add_argument("--limit", type=int, default=5, help="Entry limit per run")
     sched_sub.add_parser("run", help="Run all due schedules")
 
+    ci_ = sub.add_parser("ci", help="CI/CD integration commands")
+    ci_sub = ci_.add_subparsers(dest="ci_action", required=True)
+
+    badge_ = ci_sub.add_parser("badge", help="Generate a shields.io-compatible status badge SVG")
+    badge_.add_argument("--store", default=".harness/timeseries.ndjson", help="Time series store path")
+    badge_.add_argument("--label", default="pass rate", help="Badge label text")
+    badge_.add_argument("--output", "-o", default="badge.svg", help="Output SVG file path")
+
     mon_ = sub.add_parser("monitor", help="Observability and monitoring commands")
     mon_sub = mon_.add_subparsers(dest="monitor_action", required=True)
 
@@ -212,6 +221,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_override(args)
     if args.command == "scheduler":
         return _run_scheduler(args)
+    if args.command == "ci":
+        return _run_ci(args)
     if args.command == "monitor":
         return _run_monitor(args)
 
@@ -871,6 +882,16 @@ def _run_scheduler(args: argparse.Namespace) -> int:
             logger.info("  %s %s (%s)", status, r.get("schedule"), r.get("status"))
         return 0
 
+    return 0
+
+
+def _run_ci(args: argparse.Namespace) -> int:
+    if args.ci_action == "badge":
+        gen = BadgeGenerator()
+        svg = gen.generate(store_path=args.store, label=args.label)
+        out = gen.write(svg, args.output)
+        logger.info("Badge written to %s", out)
+        return 0
     return 0
 
 

@@ -22,6 +22,7 @@ harness scheduler list            # list scheduled evaluations
 harness override list             # list override requests
 harness monitor status            # check latest metrics
 harness monitor dashboard -o dashboard.html   # generate dashboard
+harness ci badge -o badge.svg                 # generate CI status badge
 ```
 
 ## Project Layout
@@ -31,18 +32,27 @@ harness monitor dashboard -o dashboard.html   # generate dashboard
 - **Agents** use `create_autospec` from `unittest.mock` for isolated testing
 - `.harness/`, `dashboard.html`, `report.json`, `*.ndjson` are gitignored run artifacts
 - **CORE governance** modules: `risk/`, `red_team/`, `escalation.py`, `prompt_regression.py`, `scheduler.py`
+- **CI/CD** workflows in `.github/workflows/`: `harness-eval.yml` (push/PR), `harness-scheduled.yml` (cron)
+- **Badge generation**: `ci.py` — `BadgeGenerator` for shields.io SVG badges
 
-## Documentation Rules
+## Documentation Rules (Mandatory)
 
-After any significant change, update:
+You MUST update the following files whenever the corresponding change occurs. This is not optional.
 
-- **README.md** — if user-facing behavior changes
-- **docs/ARCHITECTURE.md** — if module relationships change
-- **docs/ROADMAP.md** — if project priorities change
-- **docs/DECISIONS.md** — ADR when an architectural decision is made
-- **docs/rollback_checklist.md** — if operational procedures change
+| File | Update When | Always? |
+|------|-------------|---------|
+| **README.md** | User-facing behavior changes (CLI flags, new commands, features) | ❌ |
+| **docs/ARCHITECTURE.md** | Module relationships, package structure, or data flow changes | ❌ |
+| **docs/ROADMAP.md** | Phase status changes, milestone completion, or priority shifts | ❌ |
+| **docs/PLAN.md** | Phase completion (move from Planned → Complete with deliverables) | ❌ |
+| **docs/DECISIONS.md** | Every architectural decision — add an ADR entry | ✅ **always** |
+| **docs/rollback_checklist.md** | Operational procedures change | ❌ |
+| **CONTEXT.md** | Problem domain or scope expands | ❌ |
+| **AGENTS.md** | Key commands, project layout, or rules change | ❌ |
 
-When finishing a **Phase** or **Milestone** (per docs/ROADMAP.md), review ALL of the above.
+**Hard rule**: When completing a **Phase** or **Milestone** (per docs/ROADMAP.md), you MUST review EVERY file in the table above and update those whose condition is met. Run `git diff --stat` before and after to confirm coverage.
+
+**Recommendation**: After any code change that touches CLI commands, contracts, or modules, check the affected row above and update the corresponding doc in the same commit.
 
 ## Constraints
 

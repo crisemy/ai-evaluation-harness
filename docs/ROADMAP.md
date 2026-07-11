@@ -10,7 +10,7 @@
 | Phase 4 | Agent Evaluation | Phase 2 — Execution Setup | ✅ Complete |
 | Phase 5 | Observability & Monitoring | Phase 3 — Monitoring & Operations | ✅ Complete |
 | Phase 6 | CORE Governance Integration | Phase 3 — Monitoring & Operations | ✅ Complete |
-| Phase 7 | CI/CD Integration | Phase 4 — Deployment & Automation | Planned |
+| Phase 7 | CI/CD Integration | Phase 4 — Deployment & Automation | ✅ Complete |
 | Phase 8 | Extended Provider Support | Phase 2 — Execution Setup | Planned |
 
 ---
@@ -145,17 +145,17 @@ Goal: Automate evaluation runs in CI/CD pipelines and surface results in pull re
 
 | # | Milestone | Description | Status |
 | --- | ----------- | ------------- | -------- |
-| C1 | GitHub Actions Workflow | `harness-eval.yml` workflow that runs `harness eval` on push/PR | Planned |
-| C2 | PR Comment Reporting | Post evaluation summary as a PR comment with pass/fail breakdown | Planned |
-| C3 | Artifact Publishing | Upload reports, dashboards, and time series as build artifacts | Planned |
-| C4 | Scheduled Regression Runs | Daily/weekly cron workflow that builds time series history over time | Planned |
-| C5 | Status Badge | Generate a shields.io-compatible badge showing latest pass rate | Planned |
+| C1 | GitHub Actions Workflow | `harness-eval.yml` — runs eval/rag-eval/agent-eval in parallel with smoke-test limits on push and PR | ✅ Complete |
+| C2 | PR Comment Reporting | Posts evaluation summary as a PR comment via `actions/github-script@v7` with per-job status table | ✅ Complete |
+| C3 | Artifact Publishing | Uploads reports, dashboards, time series, and logs as `actions/upload-artifact@v4` per job | ✅ Complete |
+| C4 | Scheduled Regression Runs | `harness-scheduled.yml` — cron triggers (Mon/Thu 06:00 UTC) + `workflow_dispatch` with configurable dataset/model/limit | ✅ Complete |
+| C5 | Status Badge | `BadgeGenerator` in `src/harness/ci.py` — generates shields.io-compatible SVG badge; `harness ci badge` CLI command | ✅ Complete |
 
 ### Phase 7 - Dependencies
 
-- CLI must support non-interactive / headless mode
-- Exit codes must reliably signal pass/fail for CI gating
-- Report output paths must be configurable
+- CLI must support non-interactive / headless mode ✅ (already satisfied)
+- Exit codes must reliably signal pass/fail for CI gating ✅ (0=pass, 1=fail, 2=block)
+- Report output paths must be configurable ✅ (--output/-o on all eval commands)
 
 ---
 

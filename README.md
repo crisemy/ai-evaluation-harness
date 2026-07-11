@@ -66,7 +66,7 @@ AI Evaluation Harness aims to provide:
 
 ## Current Status
 
-Project Stage: **Phase 6 Complete** — CORE Governance Integration
+Project Stage: **Phase 7 Complete** — CI/CD Integration
 
 ### MVP (Prompt Evaluation)
 
@@ -128,13 +128,22 @@ Project Stage: **Phase 6 Complete** — CORE Governance Integration
 | G5 | Operations Tooling (`harness override` stubs, `docs/rollback_checklist.md`) | ✅ Complete |
 | G6 | Continuous Scheduling (`SchedulerEngine`, interval-based auto-eval, `harness scheduler`) | ✅ Complete |
 
+### Phase 7 — CI/CD Integration
+
+| # | Milestone | Status |
+| --- | ----------- | -------- |
+| C1 | GitHub Actions Workflow (`harness-eval.yml`) — runs eval/rag-eval/agent-eval on push and PR | ✅ Complete |
+| C2 | PR Comment Reporting — posts evaluation summary as a PR comment via `actions/github-script` | ✅ Complete |
+| C3 | Artifact Publishing — uploads reports, dashboards, and time series as build artifacts | ✅ Complete |
+| C4 | Scheduled Regression Runs — cron workflow (Mon/Thu) with `workflow_dispatch` support | ✅ Complete |
+| C5 | Status Badge (`BadgeGenerator`, `harness ci badge`) — generates shields.io-compatible SVG badge | ✅ Complete |
+
 The full evaluation pipeline works end-to-end: **load dataset → execute prompts → evaluate metrics → generate report**.
 
 ### Upcoming Phases
 
 | Phase | Focus | Status |
 | ------- | ------- | -------- |
-| Phase 7 | CI/CD Integration — GitHub Actions workflows, PR comments, artifact publishing | Planned |
 | Phase 8 | Extended Provider Support — Groq, OpenRouter, OpenAI, cost tracking | Planned |
 
 ## Target Audience
@@ -172,6 +181,8 @@ The full evaluation pipeline works end-to-end: **load dataset → execute prompt
 | `docs/data_model.md` | Schemas and data contracts |
 | `docs/rag_evaluation_strategy.md` | RAG evaluation strategy (Phase 2) |
 | `docs/rollback_checklist.md` | Operational rollback procedure (Phase 6) |
+| `.github/workflows/harness-eval.yml` | CI workflow — runs on push/PR (Phase 7) |
+| `.github/workflows/harness-scheduled.yml` | Scheduled regression runs — cron + manual dispatch (Phase 7) |
 
 ## Relationship to AI QA Core Framework
 
@@ -219,6 +230,7 @@ src/harness/
 ├── executor.py           # PromptExecutor
 ├── escalation.py         # EscalationEngine — severity gate map, failure codes
 ├── prompt_regression.py  # PromptRegistry, PromptRegressionMetric
+├── ci.py                 # BadgeGenerator — shields.io SVG badge for CI/CD (Phase 7)
 ├── scheduler.py          # SchedulerEngine — interval-based continuous eval
 ├── contracts/            # Data contracts (dataclasses)
 │   ├── dataset.py        # Dataset, DatasetEntry, DatasetMetadata, Difficulty
@@ -326,6 +338,13 @@ harness monitor dashboard -o dashboard.html
 start dashboard.html
 ```
 
+### CI/CD Commands (Phase 7)
+
+```powershell
+# Generate a shields.io-compatible status badge from the latest metric snapshot
+harness ci badge --store .harness/timeseries.ndjson --label "pass rate" -o badge.svg
+```
+
 ### CORE Governance Commands (Phase 6)
 
 ```powershell
@@ -371,6 +390,9 @@ harness monitor status
 
 # 4. Generate dashboard
 harness monitor dashboard -o dashboard.html
+
+# 5. Generate status badge for CI
+harness ci badge -o badge.svg
 ```
 
 ## Running Tests

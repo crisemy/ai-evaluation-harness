@@ -1,0 +1,203 @@
+name: AI Evaluation Harness — CI
+
+on:
+  push:
+    branches: [main, "phase-*"]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            report.json
+            .harness/
+
+  evaluate:
+    name: Evaluation — ${{ matrix.eval-type }}
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    strategy:
+      fail-fast: false
+      matrix:
+        eval-type: [eval, rag-eval, agent-eval]
+        include:
+          - eval-type: eval
+            dataset: datasets/qa_kaggle.json
+            metrics: exact_match contains
+            extra-flags: --limit 10
+          - eval-type: rag-eval
+            dataset: datasets/rag_dataset.json
+            metrics: faithfulness answer_relevancy
+            extra-flags: --limit 5
+          - eval-type: agent-eval
+            dataset: datasets/agent_dataset.json
+            metrics: step_correctness goal_achievement
+            extra-flags: --limit 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Run ${{ matrix.eval-type }} (smoke test)
+        id: evaluation
+        run: |
+          harness ${{ matrix.eval-type }} \
+            -d ${{ matrix.dataset }} \
+            --metrics ${{ matrix.metrics }} \
+            ${{ matrix.extra-flags }} \
+            -o reports/${{ matrix.eval-type }}-report.json \
+            --gate warning \
+            --verbose 2>&1 | tee reports/${{ matrix.eval-type }}-output.log
+      - name: Generate dashboard
+        if: always()
+        run: |
+          harness monitor dashboard -o reports/${{ matrix.eval-type }}-dashboard.html
+      - name: Upload evaluation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results-${{ matrix.eval-type }}
+          path: |
+            reports/
+            .harness/
+
+  regress:
+    name: Prompt Regression
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Run prompt regression
+        id: regress
+        run: |
+          harness prompt-regress \
+            -d datasets/qa_kaggle.json \
+            --model phi3 \
+            --limit 10 \
+            -o reports/prompt-regression-report.json \
+            --verbose 2>&1 | tee reports/prompt-regression-output.log
+      - name: Upload regression artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results-regression
+          path: |
+            reports/
+            .harness/
+
+  security:
+    name: Red Team Security Scan
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Run red team security scan
+        id: redteam
+        run: |
+          harness red-team \
+            -m phi3 \
+            -o reports/red-team-report.json \
+            --verbose 2>&1 | tee reports/red-team-output.log
+      - name: Upload security artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results-security
+          path: |
+            reports/
+            .harness/
+
+  report:
+    name: Evaluation Summary
+    runs-on: ubuntu-latest
+    needs: [evaluate, regress, security]
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+      - name: Build summary
+        id: summary
+        run: |
+          echo "## AI Evaluation Harness — CI Results" > summary.md
+          echo "" >> summary.md
+          echo "| Job | Status |" >> summary.md
+          echo "| --- | ------ |" >> summary.md
+          echo "| Unit Tests | ${{ needs.test.result }} |" >> summary.md
+          for eval_type in eval rag-eval agent-eval; do
+            status=$(find eval-results-$eval_type -name "*-report.json" -exec grep -l '"summary"' {} \; 2>/dev/null && echo "✅" || echo "❌")
+            echo "| $eval_type | $status |" >> summary.md
+          done
+          echo "| Prompt Regression | ${{ needs.regress.result }} |" >> summary.md
+          echo "| Red Team Security | ${{ needs.security.result }} |" >> summary.md
+          echo "" >> summary.md
+          echo "See **Artifacts** tab for full reports and dashboards." >> summary.md
+          cat summary.md
+      - name: Post PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('summary.md', 'utf8');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+      - name: Upload combined summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-summary
+          path: summary.md
