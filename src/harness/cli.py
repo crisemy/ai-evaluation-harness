@@ -19,6 +19,7 @@ from harness.contracts.trace import ObservableEvent
 from harness.errors import HarnessError
 from harness.escalation import EscalationEngine, GateAction
 from harness.evaluator import EvalSample, EvaluationConfigInput, EvaluationEngine
+from harness.prompt_regression import PromptEntry, PromptRegressionMetric, PromptRegistry, PromptVersion
 from harness.evaluator_rag import RAGEvaluator, RAGSample
 from harness.evaluator_agent import AgentEvaluator, AgentSample, AgentTrajectory
 from harness.executor import ExecutorConfig, PromptExecutor
@@ -125,6 +126,15 @@ def build_parser() -> argparse.ArgumentParser:
     cmp_.add_argument("--limit", type=int, default=0, help="Limit number of entries (0 = all)")
     cmp_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
+    pr_ = sub.add_parser("prompt-regress", help="Run prompt regression testing")
+    pr_.add_argument("--registry", required=True, help="Path to prompt registry JSON file")
+    pr_.add_argument("--provider", "-p", default="ollama", help="Provider name")
+    pr_.add_argument("--model", "-m", default="phi3", help="Model name")
+    pr_.add_argument("--output", "-o", default="prompt_regression_report.json", help="Output report path")
+    pr_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
+    pr_.add_argument("--max-tokens", type=int, default=256, help="Max tokens per response")
+    pr_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
+
     mon_ = sub.add_parser("monitor", help="Observability and monitoring commands")
     mon_sub = mon_.add_subparsers(dest="monitor_action", required=True)
 
@@ -163,6 +173,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_agent_eval(args)
     if args.command == "compare":
         return _run_compare(args)
+    if args.command == "prompt-regress":
+        return _run_prompt_regress(args)
     if args.command == "monitor":
         return _run_monitor(args)
 
@@ -587,6 +599,101 @@ def _run_compare(args: argparse.Namespace) -> int:
         logger.info("  Report:  %s", output_path)
 
         return 0
+
+    except HarnessError as e:
+        logger.error("Harness error: %s", e)
+        return 1
+    except Exception as e:
+        logger.exception("Unexpected error: %s", e)
+        return 1
+
+
+def _run_prompt_regress(args: argparse.Namespace) -> int:
+    registry_path = Path(args.registry)
+    if not registry_path.exists():
+        logger.error("Registry not found: %s", registry_path)
+        return 1
+
+    registry = PromptRegistry.load(str(registry_path))
+    entries = registry.list_all()
+    logger.info("Loaded %d prompts from registry", len(entries))
+
+    try:
+        from harness.loaders import JSONDatasetLoader
+        from harness.providers import OllamaProvider
+        from harness.executor import ExecutorConfig, PromptExecutor
+
+        loader = JSONDatasetLoader()
+        provider = OllamaProvider()
+        executor_config = ExecutorConfig(
+            provider=args.provider,
+            model=args.model,
+            temperature=args.temperature,
+            max_tokens=args.max_tokens,
+        )
+        executor = PromptExecutor(loader, provider, executor_config)
+
+        metric = PromptRegressionMetric()
+        results = []
+        total_regressions = 0
+
+        for entry in entries:
+            if not entry.versions:
+                logger.info("  %s: no versions — skipping", entry.prompt_id)
+                continue
+
+            latest = entry.versions[-1]
+            old_content = entry.versions[-2].content if len(entry.versions) >= 2 else ""
+
+            resp = executor.execute_entry(
+                type("_", (), {
+                    "id": entry.prompt_id,
+                    "input": entry.input,
+                    "expected_output": entry.expected_output,
+                })()
+            )
+
+            context = {"old_response": old_content} if old_content else {}
+            mr = metric.evaluate(response=resp.text, expected=entry.expected_output, context=context)
+            results.append({
+                "prompt_id": entry.prompt_id,
+                "label": entry.label,
+                "latest_version": latest.version,
+                "old_version": entry.versions[-2].version if len(entry.versions) >= 2 else None,
+                "metric": {
+                    "score": mr.score,
+                    "passed": mr.passed,
+                    "explanation": mr.explanation,
+                },
+            })
+
+            if not mr.passed:
+                total_regressions += 1
+                logger.warning("  %s (%s): REGRESSION — F1=%.3f", entry.prompt_id, entry.label, mr.score)
+            else:
+                logger.info("  %s (%s): OK — F1=%.3f", entry.prompt_id, entry.label, mr.score)
+
+        report = {
+            "evaluation_name": f"prompt-regression-{args.model}",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "provider": args.provider,
+            "model": args.model,
+            "total_prompts": len(entries),
+            "regressions": total_regressions,
+            "results": results,
+        }
+
+        out_path = Path(args.output)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        logger.info("")
+        logger.info("Prompt Regression complete:")
+        logger.info("  Prompts:  %d", len(entries))
+        logger.info("  Regressions: %d", total_regressions)
+        logger.info("  Report:  %s", out_path)
+
+        return 1 if total_regressions > 0 else 0
 
     except HarnessError as e:
         logger.error("Harness error: %s", e)
