@@ -20,6 +20,7 @@ from harness.errors import HarnessError
 from harness.escalation import EscalationEngine, GateAction
 from harness.evaluator import EvalSample, EvaluationConfigInput, EvaluationEngine
 from harness.prompt_regression import PromptEntry, PromptRegressionMetric, PromptRegistry, PromptVersion
+from harness.red_team import RedTeamExecutor
 from harness.evaluator_rag import RAGEvaluator, RAGSample
 from harness.evaluator_agent import AgentEvaluator, AgentSample, AgentTrajectory
 from harness.executor import ExecutorConfig, PromptExecutor
@@ -135,6 +136,15 @@ def build_parser() -> argparse.ArgumentParser:
     pr_.add_argument("--max-tokens", type=int, default=256, help="Max tokens per response")
     pr_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
+    rt_ = sub.add_parser("red-team", help="Run red team security evaluation")
+    rt_.add_argument("--provider", "-p", default="ollama", help="Provider name")
+    rt_.add_argument("--model", "-m", default="phi3", help="Model name")
+    rt_.add_argument("--test-cases", help="Path to custom red team test cases JSON file")
+    rt_.add_argument("--output", "-o", default="red_team_report.json", help="Output report path")
+    rt_.add_argument("--temperature", type=float, default=0.1, help="Temperature")
+    rt_.add_argument("--max-tokens", type=int, default=256, help="Max tokens per response")
+    rt_.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
+
     mon_ = sub.add_parser("monitor", help="Observability and monitoring commands")
     mon_sub = mon_.add_subparsers(dest="monitor_action", required=True)
 
@@ -175,6 +185,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_compare(args)
     if args.command == "prompt-regress":
         return _run_prompt_regress(args)
+    if args.command == "red-team":
+        return _run_red_team(args)
     if args.command == "monitor":
         return _run_monitor(args)
 
@@ -694,6 +706,63 @@ def _run_prompt_regress(args: argparse.Namespace) -> int:
         logger.info("  Report:  %s", out_path)
 
         return 1 if total_regressions > 0 else 0
+
+    except HarnessError as e:
+        logger.error("Harness error: %s", e)
+        return 1
+    except Exception as e:
+        logger.exception("Unexpected error: %s", e)
+        return 1
+
+
+def _run_red_team(args: argparse.Namespace) -> int:
+    test_cases = None
+    if args.test_cases:
+        tc_path = Path(args.test_cases)
+        if not tc_path.exists():
+            logger.error("Test cases file not found: %s", args.test_cases)
+            return 1
+        raw = json.loads(tc_path.read_text(encoding="utf-8"))
+        from harness.contracts.security import RedTestCase
+        test_cases = [RedTestCase(**tc) for tc in raw]
+
+    executor = RedTeamExecutor(
+        provider=args.provider,
+        model=args.model,
+        temperature=args.temperature,
+        max_tokens=args.max_tokens,
+    )
+
+    try:
+        summary = executor.run(test_cases)
+
+        report = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "provider": args.provider,
+            "model": args.model,
+            "total": summary.total,
+            "passed": summary.passed,
+            "failed": summary.failed,
+            "attack_success_rate": summary.attack_success_rate,
+            "by_category": summary.by_category,
+            "results": [
+                {
+                    "test_id": r.test_id,
+                    "category": r.category,
+                    "passed": r.passed,
+                    "explanation": r.explanation,
+                    "latency_ms": r.latency_ms,
+                }
+                for r in summary.results
+            ],
+        }
+
+        out_path = Path(args.output)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        logger.info("Report: %s", out_path)
+        return 1 if summary.failed > 0 else 0
 
     except HarnessError as e:
         logger.error("Harness error: %s", e)
