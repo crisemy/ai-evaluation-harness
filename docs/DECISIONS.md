@@ -168,3 +168,48 @@ Phase 5 introduces four components for observability and monitoring:
 - `.harness/` directory stores runtime artifacts (gitignored)
 - Custom alert rules can be provided via JSON file (`harness monitor alerts --rules my_rules.json`)
 - Dashboard is a static snapshot, not real-time
+
+---
+
+## ADR-006: CORE Governance Integration
+
+- **Date:** 2026-07-11
+- **Status:** Accepted
+
+### Context
+
+The AI Evaluation Harness had become a capable execution engine for prompt, RAG, and agent evaluations with observability, but lacked the governance methodology needed to make risk-aware quality decisions. The AI QA Core Framework defines a governance model with risk classification, escalation procedures, prompt regression testing, red team security evaluation, override management, and continuous scheduling — all of which were absent from the harness.
+
+### Decision
+
+Integrate the AI QA Core Framework governance methodology across six workstreams (Phases A through G), adding new modules while keeping backward compatibility with all existing evaluation flows:
+
+1. **Risk-Based Prioritization** — `RiskClassifier` with 7 `ChangeType` values (bugfix, feature, refactor, config, dependency, prompt, emergency), composite risk formula `risk = severity × (likelihood + impact) / 2`, and `--risk` / `--risk-threshold` CLI flags on eval/rag-eval/agent-eval.
+
+2. **Failure Escalation** — `EscalationEngine` with severity gate map (none/warning/error/critical/blocker), 11 `FailureCode` values (from `unknown` to `data_loss`), and `--gate` flag on all eval commands that blocks or warns based on the configured severity threshold.
+
+3. **Prompt Regression Testing** — `PromptRegistry` (JSON-backed baseline storage with versioning), `PromptRegressionMetric` (F1-based comparison against baseline), and `harness prompt-regress` CLI command.
+
+4. **Red Team Security Evaluation** — `RedTeamExecutor` with 3 default attack tests (jailbreak, prompt injection, role-play extraction), Attack Success Rate (ASR) tracking, and `harness red-team` CLI command.
+
+5. **Operations Tooling** — `harness override request/list/approve/reject` CLI stubs for emergency overrides, and `docs/rollback_checklist.md` for operational rollback procedures.
+
+6. **Continuous Scheduling** — `SchedulerEngine` with JSON-backed schedule registry, interval-based execution, and `harness scheduler add/list/run` CLI commands.
+
+### Rationale
+
+- All governance modules are opt-in via CLI flags — existing evaluation commands continue to work without modification
+- Risk and gate flags are integrated directly into the existing eval/rag-eval/agent-eval commands rather than requiring separate workflow definitions
+- Contracts (`risk.py`, `security.py`) follow the existing dataclass pattern in `src/harness/contracts/`
+- Default values (risk tolerance 1.0, gate "none") preserve backward compatibility
+- Each workstream was committed as a standalone phase for audit trail clarity
+- The CORE framework directory (`CORE/`) is gitignored to avoid duplicating source-of-truth content
+
+### Consequences
+
+- All existing 147 tests pass with zero regressions (7 pre-existing failures in DeepEval RAG metrics are unrelated)
+- New contracts (`risk.py`, `security.py`) added to `src/harness/contracts/`
+- New modules added: `risk/`, `red_team/`, `escalation.py`, `prompt_regression.py`, `scheduler.py`
+- CLI now supports 6 new subcommands: `prompt-regress`, `red-team`, `override`, `scheduler`
+- Existing eval commands accept 3 new optional flags: `--risk`, `--risk-threshold`, `--gate`
+- `docs/rollback_checklist.md` created for operational procedures

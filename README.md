@@ -66,7 +66,7 @@ AI Evaluation Harness aims to provide:
 
 ## Current Status
 
-Project Stage: **Phase 5 Complete** — Observability & Monitoring
+Project Stage: **Phase 6 Complete** — CORE Governance Integration
 
 ### MVP (Prompt Evaluation)
 
@@ -117,14 +117,25 @@ Project Stage: **Phase 5 Complete** — Observability & Monitoring
 | O3 | Alert Rules (`AlertEngine`) — threshold-based alerting (gt/lt/gte/lte/eq) with default rules | ✅ Complete |
 | O4 | Dashboard Templates (`DashboardGenerator`) — generates static HTML dashboards with summary cards, alerts, metric history, trends | ✅ Complete |
 
+### Phase 6 — CORE Governance Integration
+
+| # | Milestone | Status |
+| --- | ----------- | -------- |
+| G1 | Risk-Based Prioritization (`RiskClassifier`, 7 change types, risk formula, `--risk` flag) | ✅ Complete |
+| G2 | Failure Escalation (`EscalationEngine`, severity gate map, 11 failure codes, `--gate` flag) | ✅ Complete |
+| G3 | Prompt Regression Testing (`PromptRegistry`, F1-based `PromptRegressionMetric`, `harness prompt-regress`) | ✅ Complete |
+| G4 | Red Team Security Evaluation (`RedTeamExecutor`, 3 default LLM attack tests, ASR tracking, `harness red-team`) | ✅ Complete |
+| G5 | Operations Tooling (`harness override` stubs, `docs/rollback_checklist.md`) | ✅ Complete |
+| G6 | Continuous Scheduling (`SchedulerEngine`, interval-based auto-eval, `harness scheduler`) | ✅ Complete |
+
 The full evaluation pipeline works end-to-end: **load dataset → execute prompts → evaluate metrics → generate report**.
 
 ### Upcoming Phases
 
 | Phase | Focus | Status |
 | ------- | ------- | -------- |
-| Phase 6 | CI/CD Integration — GitHub Actions workflows, PR comments, artifact publishing | Planned |
-| Phase 7 | Extended Provider Support — Groq, OpenRouter, OpenAI, cost tracking | Planned |
+| Phase 7 | CI/CD Integration — GitHub Actions workflows, PR comments, artifact publishing | Planned |
+| Phase 8 | Extended Provider Support — Groq, OpenRouter, OpenAI, cost tracking | Planned |
 
 ## Target Audience
 
@@ -160,6 +171,7 @@ The full evaluation pipeline works end-to-end: **load dataset → execute prompt
 | `docs/metrics_spec.md` | Metric definitions and scoring |
 | `docs/data_model.md` | Schemas and data contracts |
 | `docs/rag_evaluation_strategy.md` | RAG evaluation strategy (Phase 2) |
+| `docs/rollback_checklist.md` | Operational rollback procedure (Phase 6) |
 
 ## Relationship to AI QA Core Framework
 
@@ -198,31 +210,72 @@ deactivate
 ```bash
 src/harness/
 ├── __init__.py
+├── cli.py                # CLI entry point (argparse) — all commands
 ├── errors.py             # Shared error types
+├── comparison.py         # ComparisonEngine, ModelSpec
+├── evaluator.py          # EvaluationEngine
+├── evaluator_rag.py      # RAGEvaluator
+├── evaluator_agent.py    # AgentEvaluator
+├── executor.py           # PromptExecutor
+├── escalation.py         # EscalationEngine — severity gate map, failure codes
+├── prompt_regression.py  # PromptRegistry, PromptRegressionMetric
+├── scheduler.py          # SchedulerEngine — interval-based continuous eval
 ├── contracts/            # Data contracts (dataclasses)
 │   ├── dataset.py        # Dataset, DatasetEntry, DatasetMetadata, Difficulty
 │   ├── execution.py      # ExecutionRequest, ExecutionResponse, TokenUsage, StreamChunk
 │   ├── evaluation.py     # MetricResult, EvaluationResult, EvaluationSummary
+│   ├── agent.py          # AgentStep, AgentTrajectory, AgentEvaluationInput
+│   ├── rag.py            # Document, DocumentChunk, RAGEvaluationInput
 │   ├── report.py         # Report, SummaryStats
+│   ├── risk.py           # ChangeType, RiskLevel, RiskAssessment (CORE governance)
+│   ├── security.py       # RedTestCase, RedTestResult, RedTestSummary (CORE governance)
 │   └── trace.py          # ObservableEvent, Trace
 ├── interfaces/           # Abstract base classes
 │   ├── dataset_loader.py # DatasetLoader (ABC)
 │   ├── provider.py       # LLMProvider (ABC)
 │   ├── metric.py         # Metric (ABC)
 │   ├── reporter.py       # Reporter (ABC)
-│   └── observer.py       # Observer (ABC)
+│   ├── observer.py       # Observer (ABC)
+│   └── context_provider.py # ContextProvider (ABC)
 ├── loaders/              # Concrete dataset loaders
 │   ├── __init__.py
 │   └── json_loader.py    # JSONDatasetLoader
+├── metrics/              # Concrete metric implementations
+│   ├── __init__.py
+│   ├── exact_match.py
+│   ├── contains.py
+│   ├── rag/              # DeepEval-wrapped RAG metrics
+│   │   ├── __init__.py
+│   │   ├── faithfulness.py
+│   │   ├── answer_relevancy.py
+│   │   ├── context_precision.py
+│   │   └── context_recall.py
+│   └── agent/            # Agent trajectory metrics
+│       ├── __init__.py
+│       ├── step_correctness.py
+│       ├── goal_achievement.py
+│       ├── tool_selection.py
+│       └── trajectory_coherence.py
+├── providers/            # Concrete LLM provider implementations
+│   ├── __init__.py
+│   ├── ollama.py
+│   └── context.py
 ├── observers/            # Concrete Observer implementations
 │   ├── __init__.py
-│   └── trace_observer.py # TraceObserver — trace capture + NdJSON persistence
+│   └── trace_observer.py
 ├── observability/        # Monitoring & alerting
 │   ├── __init__.py
 │   ├── models.py         # MetricSnapshot, AlertRule, AlertResult
 │   ├── store.py          # TimeSeriesStore — NdJSON metric history
 │   ├── alerts.py         # AlertEngine — threshold-based alerting
 │   └── dashboard.py      # DashboardGenerator — HTML dashboard
+├── risk/                 # Risk-based prioritization (CORE governance)
+│   ├── __init__.py       # RiskClassifier
+├── red_team/             # Red team security evaluation (CORE governance)
+│   ├── __init__.py       # RedTeamExecutor
+└── reporters/            # Concrete report generators
+    ├── __init__.py
+    └── json_reporter.py
 ```
 
 ## Python Conventions
@@ -271,6 +324,37 @@ harness monitor dashboard -o dashboard.html
 
 # Open the dashboard
 start dashboard.html
+```
+
+### CORE Governance Commands (Phase 6)
+
+```powershell
+# Risk-based evaluation (classify change, set risk tolerance)
+harness eval -d datasets/qa_kaggle.json -m phi3 --limit 5 --risk major --risk-threshold 0.7
+
+# Failure escalation gate (reject evaluations below severity threshold)
+harness eval -d datasets/qa_kaggle.json -m phi3 --limit 5 --gate warning
+
+# Same for RAG and Agent evaluation
+harness rag-eval -d datasets/rag_dataset.json -m phi3 --metrics faithfulness --gate error
+harness agent-eval -d datasets/agent_dataset.json -m phi3 --metrics step_correctness --gate critical
+
+# Prompt regression testing (compare against registered baseline)
+harness prompt-regress -d datasets/qa_kaggle.json -m phi3 --limit 10
+
+# Red team security evaluation (3 default LLM attack tests)
+harness red-team -d datasets/qa_kaggle.json -m phi3 --limit 5
+
+# Override management (stubs)
+harness override request --change-type major --reason "Refactor evaluator"
+harness override list
+harness override approve <request-id>
+harness override reject <request-id>
+
+# Continuous evaluation scheduling
+harness scheduler add --name nightly --interval 3600 --command "harness eval -d datasets/qa_kaggle.json -m phi3 --limit 5"
+harness scheduler list
+harness scheduler run --name nightly
 ```
 
 ### Full Pipeline (end-to-end)

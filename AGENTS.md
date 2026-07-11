@@ -14,9 +14,13 @@ Read these files in order at session start for project context:
 
 ```powershell
 .venv\Scripts\Activate.ps1      # activate venv
-pytest tests/ -v                 # run all 147 tests
-harness eval -d datasets/qa_kaggle.json -m phi3 --limit 5   # quick eval
-harness monitor status           # check latest metrics
+pytest tests/ -v                 # run all tests (138 pass, 7 pre-existing failures)
+harness eval -d datasets/qa_kaggle.json -m phi3 --limit 5 --risk major --gate warning   # risk-gated eval
+harness prompt-regress -d datasets/qa_kaggle.json -m phi3 --limit 10   # prompt regression
+harness red-team -d datasets/qa_kaggle.json -m phi3 --limit 5           # red team security
+harness scheduler list            # list scheduled evaluations
+harness override list             # list override requests
+harness monitor status            # check latest metrics
 harness monitor dashboard -o dashboard.html   # generate dashboard
 ```
 
@@ -26,6 +30,7 @@ harness monitor dashboard -o dashboard.html   # generate dashboard
 - **`harness.cli:main`** — entrypoint (registered in `pyproject.toml` scripts; also `python -m harness`)
 - **Agents** use `create_autospec` from `unittest.mock` for isolated testing
 - `.harness/`, `dashboard.html`, `report.json`, `*.ndjson` are gitignored run artifacts
+- **CORE governance** modules: `risk/`, `red_team/`, `escalation.py`, `prompt_regression.py`, `scheduler.py`
 
 ## Documentation Rules
 
@@ -35,6 +40,7 @@ After any significant change, update:
 - **docs/ARCHITECTURE.md** — if module relationships change
 - **docs/ROADMAP.md** — if project priorities change
 - **docs/DECISIONS.md** — ADR when an architectural decision is made
+- **docs/rollback_checklist.md** — if operational procedures change
 
 When finishing a **Phase** or **Milestone** (per docs/ROADMAP.md), review ALL of the above.
 

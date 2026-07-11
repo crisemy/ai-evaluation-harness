@@ -52,11 +52,23 @@ Continuous monitoring, alerting, and dashboarding for evaluation results over ti
 
 ---
 
+### Phase 6 — ✅ Complete
+
+CORE Governance Integration
+
+Integrated the AI QA Core Framework governance methodology into the harness:
+- Risk-based prioritization (RiskClassifier, 7 change types, risk gates)
+- Failure escalation (EscalationEngine, severity/failure codes, --gate flag)
+- Prompt regression testing (PromptRegistry, F1 regression metric)
+- Red team security evaluation (RedTeamExecutor, ASR tracking)
+- Operations tooling (override CLI stubs, rollback checklist)
+- Continuous scheduling (SchedulerEngine, interval-based auto-eval)
+
 All originally planned phases are complete. Additional phases are defined below and tracked in ROADMAP.md.
 
 ---
 
-## Phase 6 — CI/CD Integration (Planned)
+## Phase 7 — CI/CD Integration (Planned)
 
 Automate evaluation runs in CI/CD pipelines and surface results in pull requests.
 
@@ -67,7 +79,7 @@ Automate evaluation runs in CI/CD pipelines and surface results in pull requests
 - Scheduled cron workflows for regression tracking
 - Status badge generation
 
-## Phase 7 — Extended Provider Support (Planned)
+## Phase 8 — Extended Provider Support (Planned)
 
 Add OpenAI-compatible providers (Groq, OpenRouter, OpenAI, Anthropic, etc.) for broader model access.
 

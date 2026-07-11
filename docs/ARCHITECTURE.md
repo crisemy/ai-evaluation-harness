@@ -47,6 +47,19 @@ Components:
 - **`AlertEngine`** — Evaluates threshold-based `AlertRule` definitions (operators: gt/lt/gte/lte/eq) against historical snapshots, producing `AlertResult` objects for triggered rules.
 - **`DashboardGenerator`** — Generates a self-contained HTML dashboard page with summary cards, alert table, metric history table, and trend indicators.
 
+## Governance Layer (Phase 6 — CORE Governance Integration)
+
+Implements the AI QA Core Framework governance methodology: risk classification, failure escalation, prompt regression testing, red team security evaluation, override management, and continuous scheduling.
+
+Components:
+
+- **`RiskClassifier`** — Classifies changes by type (bugfix, feature, refactor, config, dependency, prompt, emergency) and computes a composite risk score from severity, likelihood, and impact.
+- **`EscalationEngine`** — Evaluates evaluation results against severity gate thresholds (none/warning/error/critical/blocker). Maps `FailureCode` (11 codes) to severity levels and blocks or warns based on the configured gate.
+- **`PromptRegressionMetric`** — F1-based metric that compares prompt outputs against a registered baseline to detect regressions.
+- **`PromptRegistry`** — Stores baseline prompt outputs with versioning and metadata.
+- **`RedTeamExecutor`** — Runs security attack tests (jailbreak, prompt injection, role-play extraction) against the model and tracks Attack Success Rate (ASR).
+- **`SchedulerEngine`** — JSON-backed registry of scheduled evaluation tasks with configurable intervals.
+
 ## Package Structure
 
 ```bash
@@ -70,9 +83,7 @@ src/harness/
     └── json_loader.py    # JSONDatasetLoader — loads format_version 1.0 JSON datasets
 ```
 
-## Integration Layer
-
-Provides integration with CI/CD platforms and external systems via the CLI (`harness eval`).
+## Current Package Structure
 
 ## Current Package Structure
 
@@ -94,6 +105,8 @@ src/harness/
 │   ├── agent.py              # AgentStep, AgentTrajectory, AgentEvaluationInput
 │   ├── rag.py               # Document, DocumentChunk, RAGEvaluationInput
 │   ├── report.py
+│   ├── risk.py              # ChangeType, RiskLevel, RiskAssessment (CORE governance)
+│   ├── security.py          # RedTestCase, RedTestResult, RedTestSummary (CORE governance)
 │   └── trace.py
 ├── interfaces/              # Abstract base classes
 │   ├── dataset_loader.py
@@ -134,6 +147,13 @@ src/harness/
 │   ├── store.py             # TimeSeriesStore — NdJSON append store for metric snapshots
 │   ├── alerts.py            # AlertEngine — threshold-based alert rule evaluation
 │   └── dashboard.py         # DashboardGenerator — static HTML dashboard generation
+├── escalation.py            # EscalationEngine — severity gate map, failure codes (Phase 6)
+├── prompt_regression.py     # PromptRegistry, PromptRegressionMetric (Phase 6)
+├── scheduler.py             # SchedulerEngine — interval-based continuous eval (Phase 6)
+├── risk/                    # Risk-based prioritization (Phase 6)
+│   └── __init__.py          # RiskClassifier
+├── red_team/                # Red team security evaluation (Phase 6)
+│   └── __init__.py          # RedTeamExecutor
 └── reporters/               # Concrete report generators
     ├── __init__.py
     └── json_reporter.py     # JSONReporter — writes EvaluationSummary to JSON

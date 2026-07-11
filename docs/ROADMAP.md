@@ -9,8 +9,9 @@
 | Phase 3 | Multi-Model Comparison | Phase 2 — Execution Setup | ✅ Complete |
 | Phase 4 | Agent Evaluation | Phase 2 — Execution Setup | ✅ Complete |
 | Phase 5 | Observability & Monitoring | Phase 3 — Monitoring & Operations | ✅ Complete |
-| Phase 6 | CI/CD Integration | Phase 4 — Deployment & Automation | Planned |
-| Phase 7 | Extended Provider Support | Phase 2 — Execution Setup | Planned |
+| Phase 6 | CORE Governance Integration | Phase 3 — Monitoring & Operations | ✅ Complete |
+| Phase 7 | CI/CD Integration | Phase 4 — Deployment & Automation | Planned |
+| Phase 8 | Extended Provider Support | Phase 2 — Execution Setup | Planned |
 
 ---
 
@@ -113,11 +114,34 @@ Goal: Provide continuous monitoring and alerting for evaluation results.
 
 ---
 
-## Phase 6 — CI/CD Integration
+## Phase 6 — CORE Governance Integration
+
+Goal: Integrate the AI QA Core Framework governance methodology — risk classification, failure escalation, prompt regression testing, red team security evaluation, override management, and continuous scheduling.
+
+### Phase 6 - Milestones
+
+| # | Milestone | Description | Status |
+| --- | ----------- | ------------- | -------- |
+| G1 | Risk-Based Prioritization | `RiskClassifier` with 7 change types, composite risk formula, `--risk` and `--risk-threshold` CLI flags | ✅ Complete |
+| G2 | Failure Escalation | `EscalationEngine` with severity gate map (none/warning/error/critical/blocker), 11 `FailureCode` values, `--gate` CLI flag | ✅ Complete |
+| G3 | Prompt Regression Testing | `PromptRegistry` for baseline storage, `PromptRegressionMetric` (F1-based), `harness prompt-regress` CLI command | ✅ Complete |
+| G4 | Red Team Security Evaluation | `RedTeamExecutor` with 3 default LLM attack tests (jailbreak, prompt injection, role-play extraction), ASR tracking, `harness red-team` CLI | ✅ Complete |
+| G5 | Operations Tooling | `harness override request/list/approve/reject` CLI stubs, `docs/rollback_checklist.md` | ✅ Complete |
+| G6 | Continuous Scheduling | `SchedulerEngine` with JSON-backed schedule registry, `harness scheduler add/list/run` CLI | ✅ Complete |
+
+### Phase 6 - Dependencies
+
+- Phase 5 observability must be complete (time series store for ASR tracking, alerting for gate violations)
+- CLI must support flag injection for risk/gate parameters
+- Evaluation contracts must be extensible for risk and security metadata
+
+---
+
+## Phase 7 — CI/CD Integration
 
 Goal: Automate evaluation runs in CI/CD pipelines and surface results in pull requests.
 
-### Phase 6 - Milestones
+### Phase 7 - Milestones
 
 | # | Milestone | Description | Status |
 | --- | ----------- | ------------- | -------- |
@@ -127,7 +151,7 @@ Goal: Automate evaluation runs in CI/CD pipelines and surface results in pull re
 | C4 | Scheduled Regression Runs | Daily/weekly cron workflow that builds time series history over time | Planned |
 | C5 | Status Badge | Generate a shields.io-compatible badge showing latest pass rate | Planned |
 
-### Phase 6 - Dependencies
+### Phase 7 - Dependencies
 
 - CLI must support non-interactive / headless mode
 - Exit codes must reliably signal pass/fail for CI gating
@@ -135,11 +159,11 @@ Goal: Automate evaluation runs in CI/CD pipelines and surface results in pull re
 
 ---
 
-## Phase 7 — Extended Provider Support
+## Phase 8 — Extended Provider Support
 
 Goal: Add OpenAI-compatible providers (Groq, OpenRouter, OpenAI, etc.) for broader model access.
 
-### Phase 7 - Milestones
+### Phase 8 - Milestones
 
 | # | Milestone | Description | Status |
 | --- | ----------- | ------------- | -------- |
