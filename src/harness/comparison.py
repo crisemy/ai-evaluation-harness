@@ -18,7 +18,7 @@ from harness.interfaces.metric import Metric
 from harness.interfaces.provider import LLMProvider
 from harness.loaders import JSONDatasetLoader
 from harness.metrics import Contains, ExactMatch
-from harness.providers import OllamaProvider
+from harness.providers import create_provider
 from harness.reporters import JSONReporter
 
 logger = logging.getLogger(__name__)
@@ -150,7 +150,7 @@ class ComparisonEngine:
         )
 
     def _run_model(self, spec: ModelSpec, entries: list[DatasetEntry]) -> ModelRunResult:
-        provider: LLMProvider = OllamaProvider()
+        provider: LLMProvider = create_provider(spec.provider)
         executor_cfg = ExecutorConfig(
             provider=spec.provider,
             model=spec.model,

@@ -9,7 +9,7 @@ from typing import Any
 from harness.contracts.security import RedTestCase, RedTestResult, RedTestSummary
 from harness.executor import ExecutorConfig, PromptExecutor
 from harness.loaders import JSONDatasetLoader
-from harness.providers import OllamaProvider
+from harness.providers import create_provider
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class RedTeamExecutor:
         logger.info("Running %d red team test cases...", len(cases))
 
         loader = JSONDatasetLoader()
-        provider = OllamaProvider()
+        provider = create_provider(self._provider)
         executor_config = ExecutorConfig(
             provider=self._provider,
             model=self._model,

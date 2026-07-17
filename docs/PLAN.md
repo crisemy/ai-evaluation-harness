@@ -82,13 +82,14 @@ All originally planned phases are complete. Additional phases are defined below 
 
 ---
 
-## Phase 8 — Extended Provider Support (Planned)
+## Phase 8 — Extended Provider Support ✅ Complete
 
-Add OpenAI-compatible providers (Groq, OpenRouter, OpenAI, Anthropic, etc.) for broader model access.
+Added ChatCompletions API providers (Groq, OpenRouter) for broader model access.
 
 **Key deliverables:**
 
-* OpenAI-compatible provider client (covers Groq, OpenRouter, OpenAI)
-* Environment-variable-based configuration (API keys, base URLs)
-* Per-provider cost tracking with token-based pricing
-* Retry logic and rate-limit handling
+* `ChatCompletionsProvider` — shared client for providers using the `/v1/chat/completions` API format ✅
+* Environment-variable-based configuration (API keys via `GROQ_API_KEY`, `OPENROUTER_API_KEY`) + `.env` auto-load ✅
+* Provider factory (`create_provider()` in `src/harness/providers/__init__.py`) for centralized dispatch ✅
+* Per-provider cost tracking with token-based pricing (`input_price_per_1m` / `output_price_per_1m`) ✅
+* Retry logic with exponential backoff (429, 5xx, timeouts — configurable `max_retries`) ✅

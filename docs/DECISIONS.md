@@ -322,3 +322,74 @@ Implement all 7 gap items:
 - `FailureCode` gains `CXT_ERR` (severity 3)
 - `.github/workflows/harness-scheduled.yml` updated with KPI/release report steps and rollback trigger
 - `.github/workflows/harness-eval.yml` updated with CI metadata and ASR threshold flags
+
+---
+
+## ADR-009: ChatCompletionsProvider — API-format-named Provider
+
+- **Date:** 2026-07-17
+- **Status:** Accepted
+
+### Context
+
+Phase 8 requires adding support for Groq, OpenRouter, and other cloud LLM providers. All of these providers implement the OpenAI `/v1/chat/completions` API format — the same JSON request/response schema and SSE streaming format. The initial documentation referred to this as "OpenAI-compatible provider," which misleadingly associates the class with OpenAI the company rather than the API format.
+
+### Decision
+
+Name the shared provider class `ChatCompletionsProvider` (not `OpenAICompatibleProvider` or similar) to reflect the protocol it implements: the `chat/completions` endpoint pattern.
+
+Design decisions:
+- **Single class, multiple configs** — `ChatCompletionsProvider` takes `base_url`, `api_key`, and `provider_name` as constructor arguments. Groq and OpenRouter are just pre-configured instances with different defaults (base URL, env var name for the key, optional extra headers).
+- **`create_provider()` factory** — A central factory function in `src/harness/providers/__init__.py` maps provider names (`"ollama"`, `"groq"`, `"openrouter"`) to the correct provider instance. This replaces the previous pattern of hardcoding `OllamaProvider()` at every call site.
+- **Environment variables for secrets** — API keys are read from `os.environ` (`GROQ_API_KEY`, `OPENROUTER_API_KEY`), never stored in files.
+- **Backward compatible** — All existing code using `OllamaProvider()` now goes through `create_provider("ollama")`, which returns the same `OllamaProvider` instance as before.
+
+### Rationale
+
+- `ChatCompletionsProvider` accurately describes the protocol, not the vendor — the same class works for Groq, OpenRouter, Together, DeepSeek API, and any future provider that adopts the format.
+- A factory avoids repeating provider-construction logic across 5+ call sites (cli.py, comparison.py, red_team/).
+- Environment-variable-based keys follow standard practice (no `.env` dependency needed).
+
+### Consequences
+
+- `src/harness/providers/chat_completions.py` created — `ChatCompletionsProvider` class
+- `src/harness/providers/__init__.py` updated — `create_provider()` factory + `PROVIDER_CONFIGS` dict
+- All hardcoded `OllamaProvider()` references replaced with `create_provider(name)` calls
+- 8 new tests in `tests/test_chat_completions_provider.py` — all pass
+- 143 existing tests pass (7 pre-existing DeepEval failures remain)
+- Documentation updated: ROADMAP.md, PLAN.md replace "OpenAI-compatible" with "ChatCompletions" references
+- Roadmap P1 and P2 marked Complete
+
+---
+
+## ADR-010: Cost Tracking and Retry Logic for ChatCompletionsProvider
+
+- **Date:** 2026-07-17
+- **Status:** Accepted
+
+### Context
+
+Phase 8 milestones P3 (Cost Tracking) and P4 (Retry & Rate Limiting) were still unaddressed. The `TokenUsage` dataclass already had an optional `cost` field, but it was never populated. The provider had no resilience against transient API failures (rate limits, server errors, timeouts).
+
+### Decision
+
+**P3 — Cost Tracking:**
+- Each provider config (`PROVIDER_CONFIGS`) gets a `pricing` dict with `input_price_per_1m` and `output_price_per_1m` (dollars per 1M tokens).
+- `ChatCompletionsProvider._calculate_cost()` computes `(prompt_tokens * input_price + completion_tokens * output_price) / 1_000_000`.
+- Cost is attached to `TokenUsage.cost` in the `generate()` response.
+- If no pricing is configured (e.g., Ollama), cost remains `None`.
+- Pricing values: Groq ~$0.59/$0.79 per 1M, OpenRouter ~$0.50/$1.50 per 1M (representative defaults).
+
+**P4 — Retry & Rate Limiting:**
+- `ChatCompletionsProvider` accepts `max_retries` (default 3).
+- Retry triggers: 429 (rate limit), 5xx (server error), timeout.
+- Backoff: `base_delay * 2^attempt + random_jitter` with 1s base.
+- Non-retryable 4xx errors (400, 401, 403, etc.) fail immediately.
+- After exhausting retries, the last error is raised with a descriptive message.
+
+### Consequences
+
+- 9 new tests added for cost calculation and retry scenarios — all pass
+- 155 total tests pass (7 pre-existing DeepEval failures unchanged)
+- Roadmap P3 and P4 marked Complete
+- Phase 8 now fully complete across all 4 milestones

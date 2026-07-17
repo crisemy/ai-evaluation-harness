@@ -104,7 +104,7 @@ src/harness/
 src/harness/
 ├── __init__.py
 ├── __main__.py              # python -m harness support
-├── cli.py                   # CLI entry point (argparse)
+├── cli.py                   # CLI entry point (argparse) — uses create_provider()
 ├── errors.py                # Shared error types
 ├── comparison.py            # ComparisonEngine, ModelSpec, CompareConfig, ComparisonReport
 ├── evaluator.py             # EvaluationEngine, EvalSample, EvaluationConfigInput
@@ -113,7 +113,7 @@ src/harness/
 ├── executor.py              # PromptExecutor, ExecutorConfig
 ├── contracts/               # Data contracts (dataclasses)
 │   ├── dataset.py
-│   ├── execution.py
+│   ├── execution.py         # TokenUsage (cost field), ExecutionRequest, ExecutionResponse
 │   ├── evaluation.py
 │   ├── agent.py              # AgentStep, AgentTrajectory, AgentEvaluationInput
 │   ├── rag.py               # Document, DocumentChunk, RAGEvaluationInput
@@ -123,7 +123,7 @@ src/harness/
 │   └── trace.py
 ├── interfaces/              # Abstract base classes
 │   ├── dataset_loader.py
-│   ├── provider.py
+│   ├── provider.py          # LLMProvider ABC
 │   ├── metric.py
 │   ├── reporter.py
 │   ├── observer.py
@@ -133,23 +133,24 @@ src/harness/
 │   └── json_loader.py       # JSONDatasetLoader
 ├── metrics/                 # Concrete metric implementations
 │   ├── __init__.py
-│   ├── exact_match.py       # ExactMatch — string equality
-│   ├── contains.py          # Contains — substring search
+│   ├── exact_match.py
+│   ├── contains.py
 │   ├── rag/                 # DeepEval-wrapped RAG metrics
 │   │   ├── __init__.py
-│   │   ├── faithfulness.py       # FaithfulnessMetric
-│   │   ├── answer_relevancy.py   # AnswerRelevancyMetric
-│   │   ├── context_precision.py  # ContextualPrecisionMetric
-│   │   └── context_recall.py     # ContextualRecallMetric
+│   │   ├── faithfulness.py
+│   │   ├── answer_relevancy.py
+│   │   ├── context_precision.py
+│   │   └── context_recall.py
 │   └── agent/               # Agent trajectory metrics
 │       ├── __init__.py
-│       ├── step_correctness.py   # StepCorrectness — step-level accuracy
-│       ├── goal_achievement.py   # GoalAchievement — final answer match
-│       ├── tool_selection.py     # ToolSelection — F1 tool usage score
-│       └── trajectory_coherence.py  # TrajectoryCoherence — step quality
+│       ├── step_correctness.py
+│       ├── goal_achievement.py
+│       ├── tool_selection.py
+│       └── trajectory_coherence.py
 ├── providers/               # Concrete LLM provider implementations
-│   ├── __init__.py
+│   ├── __init__.py          # create_provider() factory, PROVIDER_CONFIGS, .env auto-loader
 │   ├── ollama.py            # OllamaProvider — HTTP client for local Ollama
+│   ├── chat_completions.py  # ChatCompletionsProvider — /v1/chat/completions API (Groq, OpenRouter)
 │   └── context.py           # DatasetContextProvider — context from dataset entries
 ├── observers/               # Concrete Observer implementations
 │   ├── __init__.py

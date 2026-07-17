@@ -32,7 +32,7 @@ from harness.metrics.rag import Faithfulness, AnswerRelevancy, ContextPrecision,
 from harness.metrics.agent import StepCorrectness, GoalAchievement, ToolSelection, TrajectoryCoherence
 from harness.observability import AlertEngine, AlertRule, DashboardGenerator, TimeSeriesStore
 from harness.observers import TraceObserver
-from harness.providers import OllamaProvider
+from harness.providers import create_provider
 from harness.providers.context import DatasetContextProvider
 from harness.reporters import JSONReporter
 
@@ -274,14 +274,12 @@ def _run_eval(args: argparse.Namespace) -> int:
 
     try:
         loader = JSONDatasetLoader()
-        provider = OllamaProvider()
         executor_config = ExecutorConfig(
             provider=args.provider,
             model=args.model,
             temperature=args.temperature,
             max_tokens=args.max_tokens,
         )
-        executor = PromptExecutor(loader, provider, executor_config)
 
         dataset = loader.load(str(dataset_path))
         total_available = len(dataset.entries)
@@ -299,6 +297,9 @@ def _run_eval(args: argparse.Namespace) -> int:
 
         logger.info("Loaded %d/%d entries from %s (coverage %.0f%%)",
                      len(entries), total_available, dataset_path, coverage * 100)
+
+        provider = create_provider(args.provider)
+        executor = PromptExecutor(loader, provider, executor_config)
 
         eval_id = uuid.uuid4().hex[:12]
         _attach_trace_observer(tracer, eval_id, "eval", str(dataset_path),
@@ -406,14 +407,12 @@ def _run_rag_eval(args: argparse.Namespace) -> int:
 
     try:
         loader = JSONDatasetLoader()
-        provider = OllamaProvider()
         executor_config = ExecutorConfig(
             provider=args.provider,
             model=args.model,
             temperature=args.temperature,
             max_tokens=args.max_tokens,
         )
-        executor = PromptExecutor(loader, provider, executor_config)
 
         dataset = loader.load(str(dataset_path))
         total_available = len(dataset.entries)
@@ -431,6 +430,9 @@ def _run_rag_eval(args: argparse.Namespace) -> int:
 
         logger.info("Loaded %d/%d RAG entries from %s (coverage %.0f%%)",
                      len(entries), total_available, dataset_path, coverage * 100)
+
+        provider = create_provider(args.provider)
+        executor = PromptExecutor(loader, provider, executor_config)
 
         eval_id = uuid.uuid4().hex[:12]
         _attach_trace_observer(tracer, eval_id, "rag-eval", str(dataset_path),
@@ -736,17 +738,16 @@ def _run_prompt_regress(args: argparse.Namespace) -> int:
 
     try:
         from harness.loaders import JSONDatasetLoader
-        from harness.providers import OllamaProvider
         from harness.executor import ExecutorConfig, PromptExecutor
 
         loader = JSONDatasetLoader()
-        provider = OllamaProvider()
         executor_config = ExecutorConfig(
             provider=args.provider,
             model=args.model,
             temperature=args.temperature,
             max_tokens=args.max_tokens,
         )
+        provider = create_provider(args.provider)
         executor = PromptExecutor(loader, provider, executor_config)
 
         metric = PromptRegressionMetric()

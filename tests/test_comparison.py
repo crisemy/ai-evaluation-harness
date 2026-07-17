@@ -51,11 +51,11 @@ def sample_config():
 
 
 class TestComparisonEngine:
-    @patch("harness.comparison.OllamaProvider")
-    def test_run_with_mocked_provider(self, mock_provider_cls, sample_config):
+    @patch("harness.comparison.create_provider")
+    def test_run_with_mocked_provider(self, mock_create, sample_config):
         mock_provider = MagicMock()
         mock_provider.provider_name = "ollama"
-        mock_provider_cls.return_value = mock_provider
+        mock_create.return_value = mock_provider
 
         def mock_generate(req):
             return _mock_response(req.entry_id, text=f"response from {req.model}")
@@ -69,8 +69,8 @@ class TestComparisonEngine:
         assert any(r.spec.model == "phi3" for r in report.results)
         assert any(r.spec.model == "llama3.2" for r in report.results)
 
-    @patch("harness.comparison.OllamaProvider")
-    def test_report_contains_per_model_data(self, mock_provider_cls, sample_config):
+    @patch("harness.comparison.create_provider")
+    def test_report_contains_per_model_data(self, mock_create, sample_config):
         mock_provider = MagicMock()
         mock_provider.provider_name = "ollama"
 
@@ -78,7 +78,7 @@ class TestComparisonEngine:
             return _mock_response(req.entry_id, text=f"resp from {req.model}", tokens=20, latency=50)
 
         mock_provider.generate.side_effect = mock_generate
-        mock_provider_cls.return_value = mock_provider
+        mock_create.return_value = mock_provider
 
         engine = ComparisonEngine(sample_config)
         report = engine.run()
@@ -118,12 +118,12 @@ class TestComparisonEngine:
         assert config.metrics == ["exact_match", "contains"]
         assert config.limit == 0
 
-    @patch("harness.comparison.OllamaProvider")
-    def test_run_with_limit(self, mock_provider_cls):
+    @patch("harness.comparison.create_provider")
+    def test_run_with_limit(self, mock_create):
         mock_provider = MagicMock()
         mock_provider.provider_name = "ollama"
         mock_provider.generate.return_value = _mock_response("e1")
-        mock_provider_cls.return_value = mock_provider
+        mock_create.return_value = mock_provider
 
         config = CompareConfig(
             dataset_path=str(FIXTURES / "sample_dataset.json"),

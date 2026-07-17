@@ -141,11 +141,11 @@ Project Stage: **Phase 7 Complete** — CI/CD Integration
 
 The full evaluation pipeline works end-to-end: **load dataset → execute prompts → evaluate metrics → generate report**.
 
-### Upcoming Phases
+### Current Phase
 
 | Phase | Focus | Status |
 | ------- | ------- | -------- |
-| Phase 8 | Extended Provider Support — Groq, OpenRouter, OpenAI, cost tracking | Planned |
+| Phase 8 | Extended Provider Support — Groq, OpenRouter, cost tracking, retry/rate-limitting | ✅ Complete |
 
 ## Target Audience
 

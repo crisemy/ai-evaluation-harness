@@ -14,8 +14,10 @@ Read these files in order at session start for project context:
 
 ```powershell
 .venv\Scripts\Activate.ps1      # activate venv
-pytest tests/ -v                 # run all tests (138 pass, 7 pre-existing failures)
-harness eval -d datasets/qa_kaggle.json -m phi3 --limit 5 --risk major --gate warning   # risk-gated eval
+pytest tests/ -v                 # run all tests (155 pass, 7 pre-existing failures)
+harness eval -d datasets/qa_kaggle.json -m phi3 --limit 5 --risk major --gate warning   # risk-gated eval (Ollama)
+harness eval -d datasets/qa_kaggle.json -p groq -m llama-3.3-70b-versatile --limit 5    # eval via Groq
+harness eval -d datasets/qa_kaggle.json -p openrouter -m openai/gpt-4o-mini --limit 5   # eval via OpenRouter
 harness prompt-regress -d datasets/qa_kaggle.json -m phi3 --limit 10   # prompt regression
 harness red-team -d datasets/qa_kaggle.json -m phi3 --limit 5           # red team security
 harness scheduler list            # list scheduled evaluations
@@ -32,7 +34,9 @@ harness ci report -o release-report.json      # release quality report (Go/Condi
 - **`src/harness/`** — single package (no monorepo)
 - **`harness.cli:main`** — entrypoint (registered in `pyproject.toml` scripts; also `python -m harness`)
 - **Agents** use `create_autospec` from `unittest.mock` for isolated testing
-- `.harness/`, `dashboard.html`, `report.json`, `*.ndjson` are gitignored run artifacts
+- `.harness/`, `dashboard.html`, `report.json`, `*.ndjson`, `.env` are gitignored run artifacts
+- **Provider factory**: `providers/__init__.py` — `create_provider()` dispatches to `OllamaProvider` or `ChatCompletionsProvider` based on name
+- **Cloud providers** (Phase 8): `providers/chat_completions.py` — `ChatCompletionsProvider` supports Groq, OpenRouter, and any `/v1/chat/completions` API. API keys via `.env` auto-load
 - **CORE governance** modules: `risk/`, `red_team/`, `escalation.py`, `prompt_regression.py`, `scheduler.py`
 - **CI/CD** workflows in `.github/workflows/`: `harness-eval.yml` (push/PR), `harness-scheduled.yml` (cron)
 - **Badge generation + release reports**: `ci.py` — `BadgeGenerator`, `ReleaseReportGenerator`
@@ -53,9 +57,9 @@ You MUST update the following files whenever the corresponding change occurs. Th
 | **CONTEXT.md** | Problem domain or scope expands | ❌ |
 | **AGENTS.md** | Key commands, project layout, or rules change | ❌ |
 
-**Hard rule**: When completing a **Phase** or **Milestone** (per docs/ROADMAP.md), you MUST review EVERY file in the table above and update those whose condition is met. Run `git diff --stat` before and after to confirm coverage.
+**Hard rule**: When completing a **Phase** or **Milestone** (per docs/ROADMAP.md), you MUST update EVERY file in the table above. Each file must either (a) be substantively updated to reflect the new phase context, or (b) have an explicit justification written in the commit message for why it was unchanged. Run `git diff --stat` before and after to confirm coverage.
 
-**Recommendation**: After any code change that touches CLI commands, contracts, or modules, check the affected row above and update the corresponding doc in the same commit.
+**Hard rule**: After any code change that touches CLI commands, contracts, modules, or configuration, find the affected row in the table above and update the corresponding doc in the same commit. No doc-only commits — documentation travels with the code change.
 
 ## Constraints
 

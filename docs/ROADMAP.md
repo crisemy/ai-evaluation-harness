@@ -11,7 +11,7 @@
 | Phase 5 | Observability & Monitoring | Phase 3 — Monitoring & Operations | ✅ Complete |
 | Phase 6 | CORE Governance Integration | Phase 3 — Monitoring & Operations | ✅ Complete |
 | Phase 7 | CI/CD Integration | Phase 4 — Deployment & Automation | ✅ Complete |
-| Phase 8 | Extended Provider Support | Phase 2 — Execution Setup | Planned |
+| Phase 8 | Extended Provider Support | Phase 2 — Execution Setup | ✅ Complete |
 
 ---
 
@@ -176,13 +176,13 @@ Additional changes to align with the AI QA Core Framework CI/CD specifications:
 
 ## Phase 8 — Extended Provider Support
 
-Goal: Add OpenAI-compatible providers (Groq, OpenRouter, OpenAI, etc.) for broader model access.
+Goal: Add ChatCompletions API providers (Groq, OpenRouter, etc.) for broader model access.
 
 ### Phase 8 - Milestones
 
 | # | Milestone | Description | Status |
 | --- | ----------- | ------------- | -------- |
-| P1 | OpenAI-Compatible Provider | Support Groq, OpenRouter, and any OpenAI-API provider via a shared client | Planned |
-| P2 | Provider Configuration | API keys, base URLs, and model selections via environment variables and `.env` | Planned |
-| P3 | Cost Tracking | Token-based cost calculation per-provider with configurable pricing | Planned |
-| P4 | Retry & Rate Limiting | Exponential backoff, rate-limit handling, and request timeout configuration | Planned |
+| P1 | ChatCompletions Provider | Shared client for providers using the `/v1/chat/completions` API format (Groq, OpenRouter) | ✅ Complete |
+| P2 | Provider Configuration | API keys, base URLs, and model selections via environment variables and `.env` auto-load | ✅ Complete |
+| P3 | Cost Tracking | Token-based cost calculation per-provider with configurable pricing | ✅ Complete |
+| P4 | Retry & Rate Limiting | Exponential backoff, rate-limit handling, and request timeout configuration | ✅ Complete |
