@@ -227,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.INFO,
+        level=logging.DEBUG if getattr(args, 'verbose', False) else logging.INFO,
         format="%(levelname)s | %(message)s",
     )
 
