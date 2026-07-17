@@ -12,6 +12,7 @@
 | Phase 6 | CORE Governance Integration | Phase 3 — Monitoring & Operations | ✅ Complete |
 | Phase 7 | CI/CD Integration | Phase 4 — Deployment & Automation | ✅ Complete |
 | Phase 8 | Extended Provider Support | Phase 2 — Execution Setup | ✅ Complete |
+| Phase 9 | Interactive Comparison Dashboard | Phase 3 — Monitoring & Operations | ✅ Complete |
 
 ---
 
@@ -186,3 +187,26 @@ Goal: Add ChatCompletions API providers (Groq, OpenRouter, etc.) for broader mod
 | P2 | Provider Configuration | API keys, base URLs, and model selections via environment variables and `.env` auto-load | ✅ Complete |
 | P3 | Cost Tracking | Token-based cost calculation per-provider with configurable pricing | ✅ Complete |
 | P4 | Retry & Rate Limiting | Exponential backoff, rate-limit handling, and request timeout configuration | ✅ Complete |
+
+---
+
+## Phase 9 — Interactive Comparison Dashboard
+
+Goal: Replace static JSON comparison reports with an interactive Streamlit dashboard for visualising cross-provider evaluation results.
+
+### Phase 9 - Milestones
+
+| # | Milestone | Description | Status |
+| --- | ----------- | ------------- | -------- |
+| D1 | Streamlit scaffold | `harness ui` CLI command, `src/harness/ui/` package, sidebar nav with page routing | ✅ Complete |
+| D2 | Comparison report loader | `ComparisonReportLoader` reads comparison JSON, normalises into pandas DataFrames | ✅ Complete |
+| D3 | Model comparison view | Bar charts: pass rate, avg score, latency, cost per model — colour-coded, sortable | ✅ Complete |
+| D4 | Per-entry drill-down | Searchable table with per-model responses, expandable rows, entry selector | ✅ Complete |
+| D5 | Cost analysis view | Per-model cost breakdown, cumulative cost, per-entry cost distribution, monthly estimate | ✅ Complete |
+| D6 | Trends over time | Line charts across historical comparison reports auto-detected from `.harness/reports/` | ✅ Complete |
+
+### Phase 9 - Dependencies
+
+- `harness compare` must produce structured JSON reports ✅ (Phase 3)
+- `ComparisonReport` `to_dict()` must include per-entry cost data ✅ (Phase 3 + Phase 8)
+- `streamlit>=1.35` and `plotly>=5.20` added to `requirements.txt`

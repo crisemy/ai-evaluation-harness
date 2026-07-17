@@ -30,9 +30,10 @@ def _mock_summary(pass_rate: float = 1.0, avg_score: float = 1.0, total: int = 1
     )
 
 
-def _mock_response(entry_id: str, text: str = "answer", tokens: int = 10, latency: int = 100) -> ExecutionResponse:
+def _mock_response(entry_id: str, text: str = "answer", tokens: int = 10, latency: int = 100,
+                   provider: str = "ollama", model: str = "phi3") -> ExecutionResponse:
     return ExecutionResponse(
-        entry_id=entry_id, text=text, provider="ollama", model="phi3",
+        entry_id=entry_id, text=text, provider=provider, model=model,
         latency_ms=latency,
         token_usage=TokenUsage(prompt_tokens=5, completion_tokens=5, total_tokens=tokens),
         timestamp=datetime.now(timezone.utc),
@@ -133,3 +134,28 @@ class TestComparisonEngine:
         engine = ComparisonEngine(config)
         report = engine.run()
         assert report.total_entries == 1
+
+    @patch("harness.comparison.create_provider")
+    def test_cross_provider_models(self, mock_create):
+        def mock_factory(name):
+            prov = MagicMock()
+            prov.provider_name = name
+            prov.generate.side_effect = lambda req: _mock_response(
+                req.entry_id, text=f"resp from {name}/{req.model}",
+                provider=name, model=req.model,
+            )
+            return prov
+        mock_create.side_effect = mock_factory
+
+        config = CompareConfig(
+            dataset_path=str(FIXTURES / "sample_dataset.json"),
+            models=[
+                ModelSpec(provider="groq", model="llama-3.3-70b-versatile"),
+                ModelSpec(provider="openrouter", model="openai/gpt-4o-mini"),
+            ],
+        )
+        engine = ComparisonEngine(config)
+        report = engine.run()
+        assert len(report.results) == 2
+        assert report.results[0].spec.provider == "groq"
+        assert report.results[1].spec.provider == "openrouter"

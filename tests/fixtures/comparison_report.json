@@ -1,0 +1,69 @@
+{
+  "type": "comparison",
+  "dataset_path": "datasets/qa_kaggle.json",
+  "timestamp": "2026-07-17T12:00:00",
+  "duration_ms": 5000,
+  "total_entries": 5,
+  "models": [
+    {
+      "provider": "groq",
+      "model": "llama-3.3-70b-versatile",
+      "error": null,
+      "total_tokens": 250,
+      "total_latency_ms": 1875,
+      "avg_latency_ms": 375.0,
+      "pass_rate": 80.0,
+      "average_score": 0.85,
+      "passed": 4,
+      "failed": 1,
+      "cost": 0.000375,
+      "per_entry": [
+        {"entry_id": "ci-001", "response": "Paris is the capital of France.", "latency_ms": 375, "tokens": 50, "prompt_tokens": 14, "completion_tokens": 36, "cost": 0.000075},
+        {"entry_id": "ci-002", "response": "Berlin is the capital of Germany.", "latency_ms": 380, "tokens": 48, "prompt_tokens": 14, "completion_tokens": 34, "cost": 0.000072},
+        {"entry_id": "ci-003", "response": "The capital of Italy is Rome.", "latency_ms": 370, "tokens": 52, "prompt_tokens": 14, "completion_tokens": 38, "cost": 0.000078},
+        {"entry_id": "ci-004", "response": "Madrid is the capital of Spain.", "latency_ms": 375, "tokens": 49, "prompt_tokens": 14, "completion_tokens": 35, "cost": 0.000073},
+        {"entry_id": "ci-005", "response": "London is the capital of the United Kingdom.", "latency_ms": 375, "tokens": 51, "prompt_tokens": 14, "completion_tokens": 37, "cost": 0.000077}
+      ]
+    },
+    {
+      "provider": "openrouter",
+      "model": "openai/gpt-4o-mini",
+      "error": null,
+      "total_tokens": 110,
+      "total_latency_ms": 12000,
+      "avg_latency_ms": 2400.0,
+      "pass_rate": 100.0,
+      "average_score": 0.95,
+      "passed": 5,
+      "failed": 0,
+      "cost": 0.000825,
+      "per_entry": [
+        {"entry_id": "ci-001", "response": "Paris is the capital and most populous city of France.", "latency_ms": 2400, "tokens": 22, "prompt_tokens": 14, "completion_tokens": 8, "cost": 0.000165},
+        {"entry_id": "ci-002", "response": "Berlin is the capital and largest city of Germany by both area and population.", "latency_ms": 2500, "tokens": 24, "prompt_tokens": 14, "completion_tokens": 10, "cost": 0.000180},
+        {"entry_id": "ci-003", "response": "Rome is the capital city of Italy and the Lazio region.", "latency_ms": 2300, "tokens": 20, "prompt_tokens": 14, "completion_tokens": 6, "cost": 0.000150},
+        {"entry_id": "ci-004", "response": "Madrid is the capital of Spain and its largest city.", "latency_ms": 2450, "tokens": 23, "prompt_tokens": 14, "completion_tokens": 9, "cost": 0.000173},
+        {"entry_id": "ci-005", "response": "London is the capital and largest city of England and the United Kingdom.", "latency_ms": 2350, "tokens": 21, "prompt_tokens": 14, "completion_tokens": 7, "cost": 0.000158}
+      ]
+    },
+    {
+      "provider": "ollama",
+      "model": "phi3",
+      "error": null,
+      "total_tokens": 175,
+      "total_latency_ms": 45000,
+      "avg_latency_ms": 9000.0,
+      "pass_rate": 60.0,
+      "average_score": 0.65,
+      "passed": 3,
+      "failed": 2,
+      "cost": null,
+      "per_entry": [
+        {"entry_id": "ci-001", "response": "Paris is the capital of France.", "latency_ms": 8500, "tokens": 35, "prompt_tokens": 14, "completion_tokens": 21, "cost": null},
+        {"entry_id": "ci-002", "response": "Berlin.", "latency_ms": 9200, "tokens": 32, "prompt_tokens": 14, "completion_tokens": 18, "cost": null},
+        {"entry_id": "ci-003", "response": "The capital of Italy is Rome.", "latency_ms": 8800, "tokens": 38, "prompt_tokens": 14, "completion_tokens": 24, "cost": null},
+        {"entry_id": "ci-004", "response": "I'm not sure about the capital of Spain.", "latency_ms": 9500, "tokens": 36, "prompt_tokens": 14, "completion_tokens": 22, "cost": null},
+        {"entry_id": "ci-005", "response": "London is the capital.", "latency_ms": 9000, "tokens": 34, "prompt_tokens": 14, "completion_tokens": 20, "cost": null}
+      ]
+    }
+  ]
+}

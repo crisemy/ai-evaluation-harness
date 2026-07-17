@@ -93,3 +93,29 @@ Added ChatCompletions API providers (Groq, OpenRouter) for broader model access.
 * Provider factory (`create_provider()` in `src/harness/providers/__init__.py`) for centralized dispatch ✅
 * Per-provider cost tracking with token-based pricing (`input_price_per_1m` / `output_price_per_1m`) ✅
 * Retry logic with exponential backoff (429, 5xx, timeouts — configurable `max_retries`) ✅
+
+### Phase 9 — Interactive Comparison Dashboard ✅ Complete
+
+Replaced static JSON comparison reports with an interactive Streamlit dashboard for visualising cross-provider evaluation results.
+
+**Key deliverables:**
+
+* `harness ui --report` / `harness ui --dataset --models` CLI command — launches local Streamlit app ✅
+* `ComparisonReportLoader` — loads comparison report JSON, normalises into pandas DataFrames ✅
+* Overview page — bar charts for pass rate, avg score, latency, cost per model with summary metric cards ✅
+* Per-entry drill-down — searchable table with expandable response text across models ✅
+* Cost analysis — per-model cost breakdown, cumulative cost, entry-level cost distribution, monthly estimate ✅
+* Trends over time — line charts across historical comparison reports ✅
+* Dependencies: `streamlit`, `plotly` added to `requirements.txt` ✅
+
+## Phase 8 — Extended Provider Support ✅ Complete
+
+Added ChatCompletions API providers (Groq, OpenRouter) for broader model access.
+
+**Key deliverables:**
+
+* `ChatCompletionsProvider` — shared client for providers using the `/v1/chat/completions` API format ✅
+* Environment-variable-based configuration (API keys via `GROQ_API_KEY`, `OPENROUTER_API_KEY`) + `.env` auto-load ✅
+* Provider factory (`create_provider()` in `src/harness/providers/__init__.py`) for centralized dispatch ✅
+* Per-provider cost tracking with token-based pricing (`input_price_per_1m` / `output_price_per_1m`) ✅
+* Retry logic with exponential backoff (429, 5xx, timeouts — configurable `max_retries`) ✅

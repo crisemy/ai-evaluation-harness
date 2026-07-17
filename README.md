@@ -66,7 +66,7 @@ AI Evaluation Harness aims to provide:
 
 ## Current Status
 
-Project Stage: **Phase 7 Complete** — CI/CD Integration
+Project Stage: **Phase 9 Complete** — Interactive Comparison Dashboard
 
 ### MVP (Prompt Evaluation)
 
@@ -141,11 +141,23 @@ Project Stage: **Phase 7 Complete** — CI/CD Integration
 
 The full evaluation pipeline works end-to-end: **load dataset → execute prompts → evaluate metrics → generate report**.
 
+### Phase 9 — Interactive Comparison Dashboard
+
+| # | Milestone | Status |
+| --- | ----------- | -------- |
+| D1 | Streamlit scaffold (`harness ui` CLI, `src/harness/ui/` package, sidebar nav) | ✅ Complete |
+| D2 | Comparison Report Loader (`ComparisonReportLoader` — JSON → DataFrames) | ✅ Complete |
+| D3 | Model Comparison View (bar charts: pass rate, score, latency, cost) | ✅ Complete |
+| D4 | Per-Entry Drill-Down (searchable table, expandable model responses) | ✅ Complete |
+| D5 | Cost Analysis (per-model cost breakdown, cumulative cost, monthly estimate) | ✅ Complete |
+| D6 | Trends Over Time (line charts across historical comparison reports) | ✅ Complete |
+
 ### Current Phase
 
 | Phase | Focus | Status |
 | ------- | ------- | -------- |
 | Phase 8 | Extended Provider Support — Groq, OpenRouter, cost tracking, retry/rate-limitting | ✅ Complete |
+| Phase 9 | Interactive Comparison Dashboard — Streamlit UI for exploring comparison data | ✅ Complete |
 
 ## Target Audience
 
@@ -287,6 +299,16 @@ src/harness/
 │   ├── __init__.py       # RiskClassifier
 ├── red_team/             # Red team security evaluation (CORE governance)
 │   ├── __init__.py       # RedTeamExecutor
+├── ui/                   # Streamlit interactive dashboard (Phase 9)
+│   ├── __init__.py       # streamlit_app() entry point
+│   ├── app.py            # Streamlit app: sidebar, page routing, layout
+│   ├── loader.py         # ComparisonReportLoader — JSON → DataFrames
+│   └── pages/            # Dashboard page views
+│       ├── __init__.py
+│       ├── overview.py   # Model comparison bar charts
+│       ├── entries.py    # Per-entry drill-down table
+│       ├── cost.py       # Cost analysis charts
+│       └── trends.py     # Historical trend line charts
 └── reporters/            # Concrete report generators
     ├── __init__.py
     └── json_reporter.py
@@ -307,8 +329,14 @@ g. Use `requirements.txt` for pinned dependencies (add as you go)
 ### Evaluation Commands
 
 ```powershell
-# Standard evaluation (1456 QA entries, runs against phi3)
+# Standard evaluation (1456 QA entries, runs against phi3 via Ollama)
 harness eval -d datasets/qa_kaggle.json -m phi3 --metrics exact_match contains --limit 5
+
+# Eval via Groq (requires GROQ_API_KEY in .env)
+harness eval -d datasets/qa_kaggle.json -p groq -m llama-3.3-70b-versatile --limit 5
+
+# Eval via OpenRouter (requires OPENROUTER_API_KEY in .env)
+harness eval -d datasets/qa_kaggle.json -p openrouter -m openai/gpt-4o-mini --limit 5
 
 # RAG evaluation (requires a dataset with context_documents in metadata)
 harness rag-eval -d datasets/rag_dataset.json -m phi3 --metrics faithfulness answer_relevancy
@@ -316,8 +344,20 @@ harness rag-eval -d datasets/rag_dataset.json -m phi3 --metrics faithfulness ans
 # Agent trajectory evaluation (requires trajectory data in metadata)
 harness agent-eval -d datasets/agent_dataset.json -m phi3 --metrics step_correctness goal_achievement
 
-# Multi-model comparison
-harness compare -d datasets/qa_kaggle.json --models phi3 llama3.2 --metrics exact_match contains --limit 5
+# Multi-model comparison (same provider)
+harness compare -d datasets/qa_kaggle.json --provider groq --models llama-3.3-70b-versatile mixtral-8x7b-32768 --limit 5
+
+# Cross-provider comparison (each model specifies its own provider)
+harness compare -d datasets/qa_kaggle.json --models groq/llama-3.3-70b-versatile openrouter/openai/gpt-4o-mini ollama/phi3 --limit 5
+
+# Interactive comparison dashboard (from existing report)
+harness ui --report comparison_report.json
+
+# Interactive comparison dashboard (run live comparison first)
+harness ui -d datasets/qa_kaggle.json --models groq/llama-3.3-70b-versatile openrouter/openai/gpt-4o-mini ollama/phi3 --limit 20
+
+# Custom port
+harness ui -p 8502
 ```
 
 > Use `--limit 5` for quick smoke tests. Omit it to run against all entries.

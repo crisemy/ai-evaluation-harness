@@ -128,10 +128,13 @@ def build_parser() -> argparse.ArgumentParser:
     cmp_ = sub.add_parser("compare", help="Compare multiple models on the same dataset")
     cmp_.add_argument("--dataset", "-d", required=True, help="Path to dataset file")
     cmp_.add_argument(
-        "--models", nargs="+", default=["phi3", "llama3.2"],
-        help="Model names to compare (space-separated)",
+        "--models", nargs="+", default=["ollama/phi3", "ollama/llama3.2"],
+        help="Models to compare. Use provider/model format for cross-provider comparison "
+             "(e.g. groq/llama-3.3-70b-versatile openrouter/openai/gpt-4o-mini ollama/phi3). "
+             "If no slash, --provider is used as default.",
     )
-    cmp_.add_argument("--provider", "-p", default="ollama", help="Provider name")
+    cmp_.add_argument("--provider", "-p", default="ollama",
+                      help="Default provider for models that don't specify a provider prefix")
     cmp_.add_argument(
         "--metrics", nargs="+", default=["exact_match", "contains"], help="Metrics to apply"
     )
@@ -180,6 +183,13 @@ def build_parser() -> argparse.ArgumentParser:
     add_sched.add_argument("--interval", type=int, default=3600, help="Interval in seconds between runs")
     add_sched.add_argument("--limit", type=int, default=5, help="Entry limit per run")
     sched_sub.add_parser("run", help="Run all due schedules")
+
+    ui_ = sub.add_parser("ui", help="Launch interactive comparison dashboard (Streamlit)")
+    ui_.add_argument("--port", "-p", type=int, default=8501, help="Dashboard port (default: 8501)")
+    ui_.add_argument("--report", help="Path to comparison report JSON")
+    ui_.add_argument("--dataset", "-d", help="Dataset path for live comparison")
+    ui_.add_argument("--models", nargs="+", help="Models for live comparison (provider/model format)")
+    ui_.add_argument("--limit", type=int, default=0, help="Limit entries for live comparison")
 
     ci_ = sub.add_parser("ci", help="CI/CD integration commands")
     ci_sub = ci_.add_subparsers(dest="ci_action", required=True)
@@ -247,6 +257,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_override(args)
     if args.command == "scheduler":
         return _run_scheduler(args)
+    if args.command == "ui":
+        return _run_ui(args)
     if args.command == "ci":
         return _run_ci(args)
     if args.command == "monitor":
@@ -667,7 +679,13 @@ def _run_compare(args: argparse.Namespace) -> int:
         logger.error("Dataset not found: %s", dataset_path)
         return 1
 
-    models = [ModelSpec(provider=args.provider, model=m, temperature=args.temperature, max_tokens=args.max_tokens) for m in args.models]
+    models = []
+    for m in args.models:
+        if "/" in m:
+            prov, _, mdl = m.partition("/")
+            models.append(ModelSpec(provider=prov, model=mdl, temperature=args.temperature, max_tokens=args.max_tokens))
+        else:
+            models.append(ModelSpec(provider=args.provider, model=m, temperature=args.temperature, max_tokens=args.max_tokens))
 
     config = CompareConfig(
         dataset_path=str(dataset_path),
@@ -1013,6 +1031,17 @@ def _run_ci(args: argparse.Namespace) -> int:
         return 0
 
     return 0
+
+
+def _run_ui(args: argparse.Namespace) -> int:
+    from harness.ui import streamlit_app
+    return streamlit_app(
+        report_path=args.report,
+        dataset=args.dataset,
+        models=args.models,
+        limit=args.limit,
+        port=args.port,
+    )
 
 
 def _run_monitor(args: argparse.Namespace) -> int:

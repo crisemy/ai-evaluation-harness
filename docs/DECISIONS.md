@@ -393,3 +393,69 @@ Phase 8 milestones P3 (Cost Tracking) and P4 (Retry & Rate Limiting) were still 
 - 155 total tests pass (7 pre-existing DeepEval failures unchanged)
 - Roadmap P3 and P4 marked Complete
 - Phase 8 now fully complete across all 4 milestones
+
+---
+
+## ADR-011: Cross-Provider Comparison via provider/model CLI Syntax
+
+- **Date:** 2026-07-17
+- **Status:** Accepted
+
+### Context
+
+The `harness compare` command used a single `--provider` flag for all models, preventing cross-provider comparison (e.g., Groq vs OpenRouter vs Ollama in one run). The `ComparisonEngine` and `ModelSpec` already supported per-model providers — only the CLI parsing was the bottleneck.
+
+### Decision
+
+Extend the `--models` argument to accept `provider/model` syntax:
+- `groq/llama-3.3-70b-versatile` → provider=`groq`, model=`llama-3.3-70b-versatile`
+- `openrouter/openai/gpt-4o-mini` → provider=`openrouter`, model=`openai/gpt-4o-mini` (first `/` is the separator)
+- `phi3` (no slash) → falls back to `--provider` (backward compatible)
+
+### Consequences
+
+- Backward compatible — existing `--provider` + `--models` usage unchanged
+- 1 new test for cross-provider model specs
+- 156 tests pass, 7 pre-existing failures
+
+---
+
+## ADR-012: Streamlit for Interactive Comparison Dashboard
+
+- **Date:** 2026-07-17
+- **Status:** Accepted
+
+### Context
+
+The `harness compare` command produces a JSON report with per-model metrics (pass rate, latency, tokens, cost) and per-entry response data. Teams needed a way to explore this data interactively — filter by model, sort by metric, drill down into individual entries, compare responses side-by-side, and track trends over time. The existing `DashboardGenerator` (Phase 5) produces a static HTML page focused on metric trends, not cross-provider comparison.
+
+### Decision
+
+Build an interactive dashboard using **Streamlit** with **Plotly** charts, launched via `harness ui`:
+
+1. **`src/harness/ui/` package** — contains `app.py` (main app), `loader.py` (report loader), and `pages/` (overview, entries, cost, trends).
+2. **`harness ui` CLI command** — accepts `--report` (existing comparison JSON) or `--dataset` + `--models` (runs `harness compare` live), launches Streamlit as a subprocess.
+3. **`ComparisonReportLoader`** — loads comparison report JSON and normalises into pandas DataFrames for charting. Testable independently.
+4. **Four pages**:
+   - **Overview** — Summary metric cards + bar charts (pass rate, score, latency, cost)
+   - **Entries** — Searchable per-entry table with expandable response text across models
+   - **Cost** — Per-model & cumulative cost breakdown, entry-level distribution, monthly estimate
+   - **Trends** — Line charts across historical comparison reports (auto-detected)
+
+### Rationale
+
+- **Streamlit over static HTML**: Interactive filtering, sorting, and drill-down are cumbersome in a static page. Streamlit provides widgets (selectbox, text input, columns) and reactive rendering with zero frontend code.
+- **Plotly over st.bar_chart**: Plotly provides tooltips, legends, and interactive zoom — essential for comparing 3+ models side-by-side. `st.bar_chart` lacks these features.
+- **Subprocess over direct import**: `streamlit run` is launched as a subprocess to avoid Streamlit's module-level side effects (monkey-patching, global state) polluting the harness CLI.
+- **Loader decoupling**: `ComparisonReportLoader` is a pure data transformation class — no Streamlit dependency — making it testable with pytest and reusable for future export functionality.
+
+### Consequences
+
+- `harness ui` CLI command added — launches Streamlit dashboard on configurable port (default 8501)
+- `src/harness/ui/` package created with 6 new files
+- `requirements.txt` gains `streamlit>=1.35` and `plotly>=5.20`
+- `comparison_report.json` test fixture created in `tests/fixtures/`
+- 10 new tests for `ComparisonReportLoader` — all pass
+- 156+ tests pass overall (7 pre-existing DeepEval failures)
+- Dashboard works offline with pre-existing reports; live mode requires network access to providers
+- Trends page requires manually saving historical reports to `.harness/reports/comparison_report_*.json`

@@ -60,6 +60,19 @@ Components:
 - **`BaselineComparator`** (`src/harness/kpi_baseline.py`) — Compares current metrics against historical baselines and produces Green/Yellow/Red verdicts per KPI using CORE-defined thresholds. Exposed via `harness ci kpi`.
 - **PR Comment Reporting** — Uses `actions/github-script@v7` to post a per-job status table as a PR comment after each pipeline run.
 
+## UI Layer (Phase 9 — Interactive Comparison Dashboard)
+
+Provides an interactive Streamlit web application for exploring cross-provider comparison reports visually.
+
+Components:
+
+- **`streamlit_app()`** (`src/harness/ui/__init__.py`) — Entry point launched by `harness ui` CLI command. Spawns `streamlit run` as a subprocess with report or live-comparison arguments.
+- **`ComparisonReportLoader`** (`src/harness/ui/loader.py`) — Loads `ComparisonReport` JSON files and normalises the data into pandas DataFrames for charting. Supports loading from file or running a fresh `harness compare` via subprocess.
+- **Overview page** (`src/harness/ui/pages/overview.py`) — Summary metric cards (best pass rate, cheapest, fastest) and Plotly bar charts for pass rate, average score, latency, and cost per model.
+- **Entries page** (`src/harness/ui/pages/entries.py`) — Searchable table with per-entry response text, latency, tokens, and cost across models. Expandable row view for full response comparison.
+- **Cost page** (`src/harness/ui/pages/cost.py`) — Cost per entry grouped by model, cumulative cost bar chart, per-model cost summary table, and monthly cost extrapolator.
+- **Trends page** (`src/harness/ui/pages/trends.py`) — Line charts showing pass rate, latency, or cost over time across historical comparison reports auto-detected from `.harness/reports/`.
+
 ## Governance Layer (Phase 6 — CORE Governance Integration)
 
 Implements the AI QA Core Framework governance methodology: risk classification, failure escalation, prompt regression testing, red team security evaluation, override management, and continuous scheduling.
@@ -170,6 +183,16 @@ src/harness/
 │   └── __init__.py          # RiskClassifier
 ├── red_team/                # Red team security evaluation (Phase 6)
 │   └── __init__.py          # RedTeamExecutor
+├── ui/                      # Streamlit interactive dashboard (Phase 9)
+│   ├── __init__.py          # streamlit_app() entry point
+│   ├── app.py               # Streamlit app: sidebar, page routing, layout
+│   ├── loader.py            # ComparisonReportLoader — JSON → DataFrames
+│   └── pages/
+│       ├── __init__.py
+│       ├── overview.py      # Model comparison bar charts
+│       ├── entries.py       # Per-entry drill-down table
+│       ├── cost.py          # Cost analysis charts
+│       └── trends.py        # Historical trend line charts
 └── reporters/               # Concrete report generators
     ├── __init__.py
     └── json_reporter.py     # JSONReporter — writes EvaluationSummary to JSON

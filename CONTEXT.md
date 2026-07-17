@@ -14,7 +14,7 @@ As a result, organizations often lack reliable mechanisms to:
 * Monitor prompt changes.
 * Validate agent behavior.
 
-AI Evaluation Harness exists to address these challenges by providing a structured and repeatable evaluation framework for AI-powered systems, governed by the AI QA Core Framework methodology for risk-aware quality management and automated via CI/CD pipelines.
+AI Evaluation Harness exists to address these challenges by providing a structured and repeatable evaluation framework for AI-powered systems, governed by the AI QA Core Framework methodology for risk-aware quality management and automated via CI/CD pipelines and interactive dashboards.
 
 The project is designed for QA Engineers, AI Engineers, Reliability Engineers, Software Engineers, and engineering teams building AI-driven products.
 

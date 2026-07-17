@@ -23,6 +23,7 @@ reports/
 speach.md
 CORE_GOVERNANCE_CHANGELOG.md
 PHASE7_CI_CD_CHANGELOG.md
+PHASE9_COMPARISON_DASHBOARD.md
 
 # Datasets — regenerated via scripts/prepare_kaggle_dataset.py
 datasets/

@@ -18,6 +18,7 @@ pytest tests/ -v                 # run all tests (155 pass, 7 pre-existing failu
 harness eval -d datasets/qa_kaggle.json -m phi3 --limit 5 --risk major --gate warning   # risk-gated eval (Ollama)
 harness eval -d datasets/qa_kaggle.json -p groq -m llama-3.3-70b-versatile --limit 5    # eval via Groq
 harness eval -d datasets/qa_kaggle.json -p openrouter -m openai/gpt-4o-mini --limit 5   # eval via OpenRouter
+harness compare -d datasets/qa_kaggle.json --models groq/llama-3.3-70b-versatile openrouter/openai/gpt-4o-mini ollama/phi3 --limit 5  # cross-provider compare
 harness prompt-regress -d datasets/qa_kaggle.json -m phi3 --limit 10   # prompt regression
 harness red-team -d datasets/qa_kaggle.json -m phi3 --limit 5           # red team security
 harness scheduler list            # list scheduled evaluations
@@ -27,6 +28,8 @@ harness monitor dashboard -o dashboard.html   # generate dashboard
 harness ci badge -o badge.svg                 # generate CI status badge
 harness ci kpi -o kpi-report.json             # KPI baseline comparison
 harness ci report -o release-report.json      # release quality report (Go/Conditional-Go/No-Go)
+harness ui --report comparison_report.json    # launch interactive Streamlit dashboard
+harness ui -d datasets/qa_kaggle.json --models groq/llama-3.3-70b-versatile openrouter/openai/gpt-4o-mini ollama/phi3 --limit 20   # live compare + dashboard
 ```
 
 ## Project Layout
@@ -41,6 +44,7 @@ harness ci report -o release-report.json      # release quality report (Go/Condi
 - **CI/CD** workflows in `.github/workflows/`: `harness-eval.yml` (push/PR), `harness-scheduled.yml` (cron)
 - **Badge generation + release reports**: `ci.py` — `BadgeGenerator`, `ReleaseReportGenerator`
 - **KPI baseline comparison**: `kpi_baseline.py` — `BaselineComparator` with Green/Yellow/Red verdicts
+- **Streamlit dashboard** (Phase 9): `ui/` — `streamlit_app()`, `ComparisonReportLoader`, 4 page views (overview, entries, cost, trends)
 
 ## Documentation Rules (Mandatory)
 
