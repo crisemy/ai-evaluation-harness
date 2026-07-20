@@ -141,6 +141,15 @@ Project Stage: **Phase 9 Complete** — Interactive Comparison Dashboard
 
 The full evaluation pipeline works end-to-end: **load dataset → execute prompts → evaluate metrics → generate report**.
 
+### Phase 8 — Extended Provider Support
+
+| # | Milestone | Status |
+| --- | ----------- | -------- |
+| P1 | ChatCompletions Provider — shared client for any `/v1/chat/completions` API (Groq, OpenRouter) with streaming support | ✅ Complete |
+| P2 | Provider Configuration — API keys via `.env` (`GROQ_API_KEY`, `OPENROUTER_API_KEY`), configurable base URLs, model selection | ✅ Complete |
+| P3 | Cost Tracking — per-provider token-based cost calculation with configurable input/output pricing | ✅ Complete |
+| P4 | Retry & Rate Limiting — exponential backoff with jitter for 429/5xx/timeout, configurable max retries | ✅ Complete |
+
 ### Phase 9 — Interactive Comparison Dashboard
 
 | # | Milestone | Status |
@@ -206,9 +215,10 @@ This project follows the methodology defined in the AI QA Core Framework. The CO
 ### Prerequisites
 
 a. Install Python 3.12+
-b. PowerShell 7+ (Windows)
 
 ### Virtual Environment
+
+**Windows (PowerShell):**
 
 ```powershell
 # Create virtual environment
@@ -216,6 +226,19 @@ python -m venv .venv
 
 # Activate it
 .\.venv\Scripts\Activate.ps1
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+**macOS / Linux:**
+
+```bash
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate it
+source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -285,6 +308,7 @@ src/harness/
 ├── providers/            # Concrete LLM provider implementations
 │   ├── __init__.py
 │   ├── ollama.py
+│   ├── chat_completions.py  # Groq, OpenRouter, any /v1/chat/completions API
 │   └── context.py
 ├── observers/            # Concrete Observer implementations
 │   ├── __init__.py
