@@ -70,3 +70,4 @@ You MUST update the following files whenever the corresponding change occurs. Th
 - No new dependencies without strong reason (see `requirements.txt`)
 - Keep vendor-specific code isolated behind interfaces (`interfaces/`)
 - All evaluations must be repeatable (deterministic or seeded)
+- **Never stage (`git add`), commit, push, merge, or create PRs unless the user explicitly asks you to.** The user decides when and where to share changes.
