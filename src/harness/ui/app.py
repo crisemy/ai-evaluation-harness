@@ -19,7 +19,7 @@ st.set_page_config(
 
 st.title("AI Evaluation Harness — Comparison Dashboard")
 
-args_raw = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+args_raw = sys.argv[1:]
 report_path = None
 dataset = None
 models = None
